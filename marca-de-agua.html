@@ -3,117 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Imatges - Marca de Agua en Lote</title>
-    <link rel="icon" type="image/png" href="logo.png">
+    <title>Marca de Agua en Lote Completa</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #fbfcfd;
-            color: #212529;
-            text-align: center;
-        }
-
-        /* Top Navigation Bar */
-        .top-nav {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 10px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: #111827;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .nav-brand img {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 1px solid #e5e7eb;
-        }
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .nav-link {
-            text-decoration: none;
-            color: #4b5563;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 6px 14px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-        .nav-link:hover {
-            color: #111827;
-            background-color: #f3f4f6;
-        }
-        .nav-link.active {
-            color: #007bff;
-            background-color: #ebf5ff;
-            font-weight: 600;
-        }
-
-        .main-wrapper {
-            max-width: 1050px;
+            max-width: 1000px;
             margin: 20px auto;
             padding: 0 20px;
+            text-align: center;
         }
-
-        .page-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-        .page-header h1 {
-            margin: 0;
-            font-size: 26px;
-            color: #111827;
-        }
-        .page-header img {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            object-fit: cover;
-            border: 1px solid #e5e7eb;
-        }
-
-        .subtitle {
-            font-size: 14px;
-            color: #6b7280;
-            margin: 0 0 15px 0;
-        }
-
         .paste-notice {
             background-color: #e9ecef;
             border: 2px dashed #6c757d;
             padding: 10px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-size: 14px;
             color: #495057;
         }
-
         .container {
             display: flex;
             flex-wrap: wrap;
@@ -129,53 +37,30 @@
             gap: 12px;
             text-align: left;
             background: #f8f9fa;
-            padding: 18px;
+            padding: 15px;
             border-radius: 8px;
-            border: 1px solid #e5e7eb;
         }
         .control-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-        }
-        .control-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-        }
-        .control-group input[type="text"],
-        .control-group select,
-        .control-group input[type="file"] {
-            padding: 7px 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 14px;
-            background-color: #ffffff;
+            gap: 4px;
         }
         .quick-btn-group {
             display: flex;
             gap: 5px;
             margin-top: 4px;
-            flex-wrap: wrap;
         }
         .quick-btn-group button {
-            padding: 4px 8px;
+            padding: 2px 6px;
             font-size: 12px;
             background-color: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .quick-btn-group button:hover {
-            background-color: #5a6268;
         }
         .hidden {
             display: none !important;
         }
         .preview-area {
             flex: 2;
-            min-width: 320px;
+            min-width: 300px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -184,20 +69,14 @@
             border: 2px dashed #ccc;
             max-width: 100%;
             height: auto;
-            border-radius: 6px;
-            background: #ffffff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .gallery {
             display: flex;
             gap: 10px;
             overflow-x: auto;
-            padding: 10px 4px;
+            padding: 10px 0;
             min-height: 90px;
             align-items: center;
-            border: 1px dashed #ced4da;
-            border-radius: 6px;
-            background-color: #f8f9fa;
         }
         .thumb-wrapper {
             position: relative;
@@ -211,7 +90,6 @@
             cursor: pointer;
             object-fit: cover;
             display: block;
-            transition: border-color 0.15s;
         }
         .gallery img.active {
             border-color: #007bff;
@@ -261,141 +139,118 @@
             color: white;
             border: none;
             border-radius: 5px;
-            font-weight: 500;
-            transition: background-color 0.15s;
-        }
-        button:hover:not(:disabled) {
-            opacity: 0.95;
         }
         button:disabled {
-            background-color: #ccc !important;
+            background-color: #ccc;
             cursor: not-allowed;
         }
     </style>
 </head>
 <body>
 
-    <!-- Navigation Header -->
-    <header class="top-nav">
-        <a href="index.html" class="nav-brand">
-            <img src="logo.png" alt="Logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%23007bff\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg>'">
-            <span>Imatges</span>
-        </a>
-        <nav class="nav-links">
-            <a href="index.html" class="nav-link">🏠 Hub</a>
-            <a href="marca-de-agua.html" class="nav-link active">💧 Marca d'Aigua</a>
-            <a href="quitar-fondo.html" class="nav-link">🪄 Quitar Fondo</a>
-        </nav>
-    </header>
+    <h1>Marca de Agua en Lote</h1>
+    <div class="paste-notice">
+        📌 <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) para pegar imágenes desde el portapapeles.
+    </div>
 
-    <div class="main-wrapper">
-        <div class="page-header">
-            <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
-            <h1>Marca de Agua en Lote</h1>
-        </div>
-        <p class="subtitle">Afegeix fàcilment la teva marca, copyright o signatura a múltiples imatges en segons.</p>
-
-        <div class="paste-notice">
-            📌 <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) para pegar imágenes desde el portapapeles o arrastra archivos.
-        </div>
-
-        <div class="container">
-            <div class="controls">
-                <div class="control-group">
-                    <label for="imgInput">Seleccionar Imágenes:</label>
-                    <input type="file" id="imgInput" accept="image/*" multiple>
-                </div>
-
-                <div class="control-group">
-                    <label for="textInput">Texto Base:</label>
-                    <input type="text" id="textInput" value="© Mi Marca">
-                </div>
-
-                <div class="control-group">
-                    <label for="fontFamily">Fuente de Letra:</label>
-                    <select id="fontFamily">
-                        <option value="Arial, sans-serif">Arial</option>
-                        <option value="Verdana, sans-serif">Verdana</option>
-                        <option value="'Times New Roman', serif">Times New Roman</option>
-                        <option value="'Courier New', monospace">Courier New</option>
-                        <option value="Georgia, serif">Georgia</option>
-                        <option value="Impact, sans-serif">Impact</option>
-                        <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
-                        <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label for="position">Ubicación de la Marca:</label>
-                    <select id="position">
-                        <option value="center">Centro</option>
-                        <option value="tile">Mosaico (Repetida / Patrón)</option>
-                        <optgroup label="Esquinas">
-                            <option value="top-left">Arriba a la izquierda</option>
-                            <option value="top-right">Arriba a la derecha</option>
-                            <option value="bottom-left">Abajo a la izquierda</option>
-                            <option value="bottom-right">Abajo a la derecha</option>
-                        </optgroup>
-                        <optgroup label="Bordes Centrales">
-                            <option value="top-center">Arriba al centro</option>
-                            <option value="bottom-center">Abajo al centro</option>
-                            <option value="middle-left">Centro a la izquierda</option>
-                            <option value="middle-right">Centro a la derecha</option>
-                        </optgroup>
-                    </select>
-                </div>
-
-                <div class="control-group hidden" id="tileDensityGroup">
-                    <label for="tileSpacing">Separación de Mosaico (menor = más denso):</label>
-                    <input type="range" id="tileSpacing" min="10" max="300" value="80">
-                </div>
-
-                <div class="control-group">
-                    <label for="rotation">Rotación: <strong id="rotationVal">0°</strong></label>
-                    <input type="range" id="rotation" min="-180" max="180" value="0">
-                    <div class="quick-btn-group">
-                        <button type="button" onclick="setRotation(-90)">-90°</button>
-                        <button type="button" onclick="setRotation(-45)">-45°</button>
-                        <button type="button" onclick="setRotation(0)">0° (Horizontal)</button>
-                        <button type="button" onclick="setRotation(45)">45°</button>
-                        <button type="button" onclick="setRotation(90)">90°</button>
-                    </div>
-                </div>
-
-                <div class="control-group">
-                    <label for="fontSize">Tamaño del Texto (px):</label>
-                    <input type="range" id="fontSize" min="10" max="200" value="48">
-                </div>
-
-                <div class="control-group">
-                    <label for="textColor">Color del Texto:</label>
-                    <input type="color" id="textColor" value="#ffffff" style="height:38px; width:100%; padding:2px;">
-                </div>
-
-                <div class="control-group">
-                    <label for="opacity">Opacidad:</label>
-                    <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.5">
-                </div>
-
-                <div class="control-group">
-                    <label for="exportFormat">Formato de Descarga:</label>
-                    <select id="exportFormat">
-                        <option value="image/png">PNG (.png)</option>
-                        <option value="image/jpeg">JPEG (.jpg)</option>
-                        <option value="image/webp">WEBP (.webp)</option>
-                    </select>
-                </div>
-
-                <button id="copyBtn" disabled style="background-color: #007bff; margin-bottom: 5px;">Copiar al Portapapeles</button>
-                <button id="downloadZipBtn" disabled>Descargar Todas (.ZIP)</button>
-                <button id="clearAllBtn" class="clear-all-btn">Limpiar Todo</button>
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="imgInput">Seleccionar Imágenes:</label>
+                <input type="file" id="imgInput" accept="image/*" multiple>
             </div>
 
-            <div class="preview-area">
-                <div class="gallery" id="gallery"></div>
-                <canvas id="canvas"></canvas>
-                <button id="deleteCurrentBtn" class="delete-current-btn" disabled>Borrar Imagen Seleccionada</button>
+            <div class="control-group">
+                <label for="textInput">Texto Base:</label>
+                <input type="text" id="textInput" value="© Mi Marca">
             </div>
+
+            <div class="control-group">
+                <label for="fontFamily">Fuente de Letra:</label>
+                <select id="fontFamily">
+                    <option value="Arial, sans-serif">Arial</option>
+                    <option value="Verdana, sans-serif">Verdana</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="Impact, sans-serif">Impact</option>
+                    <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+                    <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="position">Ubicación de la Marca:</label>
+                <select id="position">
+                    <option value="center">Centro</option>
+                    <option value="tile">Mosaico (Repetida / Patrón)</option>
+                    <optgroup label="Esquinas">
+                        <option value="top-left">Arriba a la izquierda</option>
+                        <option value="top-right">Arriba a la derecha</option>
+                        <option value="bottom-left">Abajo a la izquierda</option>
+                        <option value="bottom-right">Abajo a la derecha</option>
+                    </optgroup>
+                    <optgroup label="Bordes Centrales">
+                        <option value="top-center">Arriba al centro</option>
+                        <option value="bottom-center">Abajo al centro</option>
+                        <option value="middle-left">Centro a la izquierda</option>
+                        <option value="middle-right">Centro a la derecha</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="control-group hidden" id="tileDensityGroup">
+                <label for="tileSpacing">Separación de Mosaico (menor = más denso):</label>
+                <input type="range" id="tileSpacing" min="10" max="300" value="80">
+            </div>
+
+            <div class="control-group">
+                <label for="rotation">Rotación: <strong id="rotationVal">0°</strong></label>
+                <input type="range" id="rotation" min="-180" max="180" value="0">
+                <div class="quick-btn-group">
+                    <button type="button" onclick="setRotation(-90)">-90°</button>
+                    <button type="button" onclick="setRotation(-45)">-45°</button>
+                    <button type="button" onclick="setRotation(0)">0° (Horizontal)</button>
+                    <button type="button" onclick="setRotation(45)">45°</button>
+                    <button type="button" onclick="setRotation(90)">90°</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="fontSize">Tamaño del Texto (px):</label>
+                <input type="range" id="fontSize" min="10" max="200" value="48">
+            </div>
+
+            <div class="control-group">
+                <label for="textColor">Color del Texto:</label>
+                <input type="color" id="textColor" value="#ffffff">
+            </div>
+
+            <div class="control-group">
+                <label for="opacity">Opacidad:</label>
+                <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.5">
+            </div>
+
+            
+            <div class="control-group">
+                <label for="exportFormat">Formato de Descarga:</label>
+                <select id="exportFormat">
+                    <option value="image/png">PNG (.png)</option>
+                    <option value="image/jpeg">JPEG (.jpg)</option>
+                    <option value="image/webp">WEBP (.webp)</option>
+                </select>
+            </div>
+
+            <button id="copyBtn" disabled style="background-color: #007bff; margin-bottom: 5px;">Copiar al Portapapeles</button>
+            <button id="downloadZipBtn" disabled>Descargar Todas (.ZIP)</button>
+
+            <button id="clearAllBtn" class="clear-all-btn">Limpiar Todo</button>
+        </div>
+
+        <div class="preview-area">
+            <div class="gallery" id="gallery"></div>
+            <canvas id="canvas"></canvas>
+            <button id="deleteCurrentBtn" class="delete-current-btn" disabled>Borrar Imagen Seleccionada</button>
         </div>
     </div>
 
@@ -417,8 +272,6 @@
         const downloadZipBtn = document.getElementById('downloadZipBtn');
         const deleteCurrentBtn = document.getElementById('deleteCurrentBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
-        const exportFormatSelect = document.getElementById('exportFormat');
-        const copyBtn = document.getElementById('copyBtn');
 
         let loadedImages = [];
         let selectedIndex = -1;
@@ -472,23 +325,19 @@
             }
 
             if (savedImages) {
-                try {
-                    const imagesData = JSON.parse(savedImages);
-                    loadedImages = [];
-                    for (let item of imagesData) {
-                        const img = await loadImageFromSrc(item.src);
-                        loadedImages.push({ name: item.name, img: img });
-                    }
-                    
-                    if (selectedIndex >= loadedImages.length) {
-                        selectedIndex = loadedImages.length - 1;
-                    }
-                    
-                    renderGallery();
-                    renderCurrentPreview();
-                } catch(e) {
-                    console.error("Error cargando imágenes previas:", e);
+                const imagesData = JSON.parse(savedImages);
+                loadedImages = [];
+                for (let item of imagesData) {
+                    const img = await loadImageFromSrc(item.src);
+                    loadedImages.push({ name: item.name, img: img });
                 }
+                
+                if (selectedIndex >= loadedImages.length) {
+                    selectedIndex = loadedImages.length - 1;
+                }
+                
+                renderGallery();
+                renderCurrentPreview();
             }
         }
 
@@ -518,18 +367,6 @@
             if (files.length === 0) return;
             await processFiles(files);
             imgInput.value = '';
-        });
-
-        // Drag & drop support
-        window.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-        window.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-            if (files.length > 0) {
-                await processFiles(files);
-            }
         });
 
         window.addEventListener('paste', async (e) => {
@@ -675,8 +512,8 @@
 
         function applyWatermarkToCanvas(imgItem) {
             const img = imgItem.img;
-            const width = img.naturalWidth || img.width;
-            const height = img.naturalHeight || img.height;
+            const width = img.width;
+            const height = img.height;
 
             canvas.width = width;
             canvas.height = height;
@@ -771,13 +608,19 @@
             });
         });
 
+        
+        const exportFormatSelect = document.getElementById('exportFormat');
+        const copyBtn = document.getElementById('copyBtn');
+
         // Copy button handler
         copyBtn.addEventListener('click', async () => {
             if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
             try {
                 canvas.toBlob(async (blob) => {
                     if (!blob) return;
+                    // PNG is supported universally by ClipboardItem
                     if (navigator.clipboard && window.ClipboardItem) {
+                        // If selected format is JPEG/WEBP, we convert canvas to PNG for clipboard compatibility if needed, or use blob directly
                         let copyBlob = blob;
                         if (exportFormatSelect.value !== 'image/png') {
                             const tempCanvas = document.createElement('canvas');
@@ -795,7 +638,7 @@
                     } else {
                         alert('Tu navegador no soporta la copia directa de imágenes al portapapeles.');
                     }
-                }, exportFormatSelect.value, 0.95);
+                }, exportFormatSelect.value, 0.92);
             } catch (err) {
                 console.error(err);
                 alert('No se pudo copiar la imagen al portapapeles.');
@@ -816,7 +659,7 @@
 
             loadedImages.forEach((item, index) => {
                 applyWatermarkToCanvas(item);
-                const dataUrl = canvas.toDataURL(mimeType, 0.95);
+                const dataUrl = canvas.toDataURL(mimeType, 0.92);
                 const base64Data = dataUrl.split(',')[1];
                 
                 const sequenceNum = String(index + 1).padStart(3, '0');

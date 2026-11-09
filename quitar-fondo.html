@@ -3,117 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Imatges - Quitar Fondo (Treure Fons)</title>
-    <link rel="icon" type="image/png" href="logo.png">
+    <title>Quitar Fondo en Lote</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-        }
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #fbfcfd;
-            color: #212529;
-            text-align: center;
-        }
-
-        /* Top Navigation Bar */
-        .top-nav {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 10px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: #111827;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .nav-brand img {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 1px solid #e5e7eb;
-        }
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .nav-link {
-            text-decoration: none;
-            color: #4b5563;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 6px 14px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-        .nav-link:hover {
-            color: #111827;
-            background-color: #f3f4f6;
-        }
-        .nav-link.active {
-            color: #007bff;
-            background-color: #ebf5ff;
-            font-weight: 600;
-        }
-
-        .main-wrapper {
-            max-width: 1100px;
+            max-width: 1000px;
             margin: 20px auto;
             padding: 0 20px;
+            text-align: center;
         }
-
-        .page-header {
+        .header-title {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            margin-bottom: 8px;
+            margin-bottom: 15px;
         }
-        .page-header h1 {
-            margin: 0;
-            font-size: 26px;
-            color: #111827;
-        }
-        .page-header img {
-            width: 38px;
+        .header-title img {
             height: 38px;
-            border-radius: 10px;
-            object-fit: cover;
-            border: 1px solid #e5e7eb;
+            border-radius: 6px;
         }
-
-        .subtitle {
-            font-size: 14px;
-            color: #6b7280;
-            margin: 0 0 15px 0;
+        .header-title h1 {
+            margin: 0;
         }
-
         .paste-notice {
             background-color: #e9ecef;
             border: 2px dashed #6c757d;
             padding: 10px;
             border-radius: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-size: 14px;
             color: #495057;
         }
-
         .container {
             display: flex;
             flex-wrap: wrap;
@@ -123,254 +45,61 @@
         }
         .controls {
             flex: 1;
-            min-width: 310px;
-            max-width: 360px;
+            min-width: 290px;
             display: flex;
             flex-direction: column;
             gap: 12px;
             text-align: left;
             background: #f8f9fa;
-            padding: 18px;
+            padding: 15px;
             border-radius: 8px;
-            border: 1px solid #e5e7eb;
         }
         .control-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-        }
-        .control-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .control-group input[type="text"],
-        .control-group select,
-        .control-group input[type="file"] {
-            padding: 7px 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 14px;
-            background-color: #ffffff;
-        }
-
-        /* Section divider in controls */
-        .controls-divider {
-            height: 1px;
-            background-color: #e5e7eb;
-            margin: 4px 0;
-        }
-        .section-title {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #6b7280;
-            font-weight: bold;
-            margin-top: 4px;
-        }
-
-        /* AI Status Bar */
-        .status-badge-container {
-            background-color: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            padding: 8px 12px;
-            border-radius: 6px;
-            display: flex;
-            flex-direction: column;
             gap: 4px;
         }
-        .status-badge-header {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #166534;
-        }
-        .status-spinner {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid #22c55e;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .progress-bar-bg {
-            background: #e2e8f0;
-            border-radius: 999px;
-            height: 6px;
-            overflow: hidden;
-            width: 100%;
-        }
-        .progress-bar-fill {
-            background: #28a745;
-            height: 100%;
-            width: 0%;
-            transition: width 0.2s ease;
-        }
-
-        /* Segmented / Tab buttons */
-        .tabs-group {
-            display: flex;
-            gap: 4px;
-            background: #e9ecef;
-            padding: 3px;
-            border-radius: 6px;
-        }
-        .tab-btn {
-            flex: 1;
-            padding: 6px 8px;
-            font-size: 12px;
-            font-weight: 600;
-            background: transparent;
-            color: #495057;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-align: center;
-        }
-        .tab-btn.active {
-            background: #ffffff;
-            color: #111827;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        /* Swatches */
-        .swatches-grid {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-top: 4px;
-        }
-        .swatch {
-            width: 26px;
-            height: 26px;
-            border-radius: 6px;
-            border: 2px solid #dee2e6;
-            cursor: pointer;
-            transition: transform 0.1s, border-color 0.1s;
-        }
-        .swatch:hover {
-            transform: scale(1.1);
-            border-color: #495057;
-        }
-        .swatch.active {
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.4);
-        }
-
-        /* Preset Background Images */
-        .bg-presets-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            margin-top: 6px;
-        }
-        .bg-preset-thumb {
-            height: 48px;
-            border-radius: 5px;
-            border: 2px solid transparent;
-            cursor: pointer;
-            background-size: cover;
-            background-position: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .bg-preset-thumb:hover {
-            opacity: 0.9;
-        }
-        .bg-preset-thumb.active {
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.4);
-        }
-        .bg-preset-label {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            font-size: 9px;
-            text-align: center;
-            padding: 2px;
-        }
-
-        /* Brush controls */
-        .brush-panel {
-            background: #ffffff;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
         .quick-btn-group {
             display: flex;
             gap: 5px;
             margin-top: 4px;
-            flex-wrap: wrap;
         }
         .quick-btn-group button {
-            padding: 4px 8px;
+            padding: 2px 6px;
             font-size: 12px;
             background-color: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .quick-btn-group button:hover {
-            background-color: #5a6268;
         }
         .hidden {
             display: none !important;
         }
-
         .preview-area {
             flex: 2;
-            min-width: 320px;
+            min-width: 300px;
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
-
-        /* Canvas Wrapper & Checkerboard */
-        .canvas-container {
+        .canvas-wrap {
             position: relative;
-            width: 100%;
             background-image: 
-                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
-                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
-                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            background-color: #ffffff;
+                linear-gradient(45deg, #e9ecef 25%, transparent 25%), 
+                linear-gradient(-45deg, #e9ecef 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e9ecef 75%), 
+                linear-gradient(-45deg, transparent 75%, #e9ecef 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
             border: 2px dashed #ccc;
-            border-radius: 8px;
-            min-height: 380px;
+            border-radius: 4px;
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         canvas {
             max-width: 100%;
             height: auto;
             display: block;
         }
-
-        /* Brush cursor overlay */
         #brushCursor {
             position: absolute;
             border: 2px solid #007bff;
@@ -379,50 +108,14 @@
             pointer-events: none;
             transform: translate(-50%, -50%);
             display: none;
-            z-index: 50;
         }
-
-        /* Split Comparison Slider */
-        .comparison-slider {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: #ffffff;
-            box-shadow: 0 0 6px rgba(0,0,0,0.6);
-            cursor: ew-resize;
-            z-index: 40;
-            display: none;
-        }
-        .comparison-handle {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 36px;
-            height: 36px;
-            background: #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            color: #374151;
-            user-select: none;
-        }
-
-        /* Gallery */
         .gallery {
             display: flex;
             gap: 10px;
             overflow-x: auto;
-            padding: 10px 4px;
+            padding: 10px 0;
             min-height: 90px;
             align-items: center;
-            border: 1px dashed #ced4da;
-            border-radius: 6px;
-            background-color: #f8f9fa;
         }
         .thumb-wrapper {
             position: relative;
@@ -436,25 +129,10 @@
             cursor: pointer;
             object-fit: cover;
             display: block;
-            transition: border-color 0.15s;
-            background-color: #fff;
+            background: #fff;
         }
         .gallery img.active {
             border-color: #007bff;
-        }
-        .thumb-status {
-            position: absolute;
-            bottom: 2px;
-            left: 2px;
-            background: rgba(0,0,0,0.7);
-            color: #22c55e;
-            font-size: 10px;
-            padding: 1px 4px;
-            border-radius: 3px;
-            pointer-events: none;
-        }
-        .thumb-status.processing {
-            color: #f59e0b;
         }
         .delete-thumb-btn {
             position: absolute;
@@ -493,8 +171,6 @@
         .clear-all-btn:hover {
             background-color: #5a6268;
         }
-
-        /* Action Buttons */
         button {
             padding: 10px;
             font-size: 15px;
@@ -503,310 +179,149 @@
             color: white;
             border: none;
             border-radius: 5px;
-            font-weight: 500;
-            transition: background-color 0.15s;
-        }
-        button:hover:not(:disabled) {
-            opacity: 0.95;
         }
         button:disabled {
-            background-color: #ccc !important;
+            background-color: #ccc;
             cursor: not-allowed;
         }
-
-        /* Tool bar over preview */
-        .preview-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #ffffff;
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid #e5e7eb;
+        .status-text {
             font-size: 13px;
-        }
-        .view-mode-buttons {
-            display: flex;
-            gap: 6px;
-        }
-        .view-mode-buttons button {
-            background: #e5e7eb;
-            color: #374151;
-            padding: 4px 10px;
-            font-size: 12px;
+            color: #495057;
+            padding: 6px;
+            background: #e9ecef;
             border-radius: 4px;
-        }
-        .view-mode-buttons button.active {
-            background: #007bff;
-            color: white;
-        }
-        .resolution-tag {
-            color: #6b7280;
-            font-size: 12px;
-            font-weight: 500;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <!-- Navigation Header -->
-    <header class="top-nav">
-        <a href="index.html" class="nav-brand">
-            <img src="logo.png" alt="Logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%23007bff\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg>'">
-            <span>Imatges</span>
-        </a>
-        <nav class="nav-links">
-            <a href="index.html" class="nav-link">🏠 Hub</a>
-            <a href="marca-de-agua.html" class="nav-link">💧 Marca d'Aigua</a>
-            <a href="quitar-fondo.html" class="nav-link active">🪄 Quitar Fondo</a>
-        </nav>
-    </header>
+    <div class="header-title">
+        <img src="logo.png" alt="Logo">
+        <h1>Quitar Fondo en Lote</h1>
+    </div>
 
-    <div class="main-wrapper">
-        <div class="page-header">
-            <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
-            <h1>Treure el Fons (Quitar Fondo)</h1>
-        </div>
-        <p class="subtitle">Elimina o substitueix el fons de les teves imatges automàticament amb IA, sense pèrdua de qualitat.</p>
+    <div class="paste-notice">
+        📌 <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) para pegar imágenes desde el portapapeles.
+    </div>
 
-        <div class="paste-notice">
-            📌 <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) per enganxar imatges directament des del porta-retalls, o arrossega els teus fitxers.
-        </div>
-
-        <div class="container">
-            <!-- Left Controls Sidebar -->
-            <div class="controls">
-                <!-- File Input -->
-                <div class="control-group">
-                    <label for="imgInput">Seleccionar Imatges:</label>
-                    <input type="file" id="imgInput" accept="image/*" multiple>
-                </div>
-
-                <!-- AI Engine Status -->
-                <div class="status-badge-container" id="statusContainer">
-                    <div class="status-badge-header">
-                        <span id="statusSpinner" class="status-spinner hidden"></span>
-                        <span id="statusText">Motor IA llest per processar</span>
-                    </div>
-                    <div class="progress-bar-bg" id="progressBarBg" style="display:none;">
-                        <div class="progress-bar-fill" id="progressBarFill"></div>
-                    </div>
-                </div>
-
-                <div class="controls-divider"></div>
-                <div class="section-title">1. Fons / Fondo (Remove.bg)</div>
-
-                <!-- Background Category Tabs -->
-                <div class="tabs-group" id="bgTabs">
-                    <button type="button" class="tab-btn active" data-tab="transparent">Transparent</button>
-                    <button type="button" class="tab-btn" data-tab="color">Color</button>
-                    <button type="button" class="tab-btn" data-tab="image">Imatge</button>
-                    <button type="button" class="tab-btn" data-tab="blur">Desenfoc</button>
-                </div>
-
-                <!-- Transparent Tab info -->
-                <div id="tabTransparentContent" class="control-group">
-                    <span style="font-size:12px; color:#6b7280;">Fons transparent en format PNG (patró de quadrícula). Ideal per a dissenys i e-commerce.</span>
-                </div>
-
-                <!-- Color Tab options -->
-                <div id="tabColorContent" class="control-group hidden">
-                    <label for="bgColorPicker">Color de Fons:</label>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                        <input type="color" id="bgColorPicker" value="#ffffff" style="height:36px; width:45px; padding:2px; border:1px solid #ced4da; border-radius:4px; cursor:pointer;">
-                        <input type="text" id="bgColorText" value="#ffffff" style="flex:1; padding:7px; border:1px solid #ced4da; border-radius:4px; font-size:13px;">
-                    </div>
-                    <!-- Quick Color Swatches -->
-                    <div class="swatches-grid">
-                        <div class="swatch active" style="background:#ffffff;" data-color="#ffffff" title="Blanc pur"></div>
-                        <div class="swatch" style="background:#f3f4f6;" data-color="#f3f4f6" title="Gris estudi"></div>
-                        <div class="swatch" style="background:#111827;" data-color="#111827" title="Negre elegant"></div>
-                        <div class="swatch" style="background:#dbeafe;" data-color="#dbeafe" title="Blau cel"></div>
-                        <div class="swatch" style="background:#fef3c7;" data-color="#fef3c7" title="Sorra càlid"></div>
-                        <div class="swatch" style="background:#d1fae5;" data-color="#d1fae5" title="Verd menta"></div>
-                        <div class="swatch" style="background:#fce7f3;" data-color="#fce7f3" title="Rosa nude"></div>
-                        <div class="swatch" style="background:#ef4444;" data-color="#ef4444" title="Vermell viu"></div>
-                        <div class="swatch" style="background:#2563eb;" data-color="#2563eb" title="Blau corporatiu"></div>
-                        <div class="swatch" style="background:#7c3aed;" data-color="#7c3aed" title="Violeta creatiu"></div>
-                    </div>
-                </div>
-
-                <!-- Image Tab options -->
-                <div id="tabImageContent" class="control-group hidden">
-                    <label for="customBgInput">Pujar fons personalitzat:</label>
-                    <input type="file" id="customBgInput" accept="image/*">
-                    <div style="font-size:11px; color:#6b7280; margin-top:2px;">O escull un fons d'estudi predefinit:</div>
-                    <div class="bg-presets-grid" id="bgPresetsGrid">
-                        <!-- Presets generated via code -->
-                    </div>
-                </div>
-
-                <!-- Blur Tab options -->
-                <div id="tabBlurContent" class="control-group hidden">
-                    <label for="blurRange">Nivell de Desenfocament (Bokeh): <strong id="blurVal">12px</strong></label>
-                    <input type="range" id="blurRange" min="2" max="30" value="12">
-                    <div class="quick-btn-group">
-                        <button type="button" onclick="setBlur(4)">Suau (4px)</button>
-                        <button type="button" onclick="setBlur(12)">Retrat (12px)</button>
-                        <button type="button" onclick="setBlur(24)">Intens (24px)</button>
-                    </div>
-                </div>
-
-                <div class="controls-divider"></div>
-                <div class="section-title">2. Pinzell de Retoc Manual</div>
-
-                <!-- Manual Touch-up Switch -->
-                <div class="control-group">
-                    <label style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-                        <input type="checkbox" id="brushModeToggle">
-                        <span>Activar Pinzell (Esborrar / Restaurar)</span>
-                    </label>
-                </div>
-
-                <div class="brush-panel hidden" id="brushPanel">
-                    <div class="tabs-group">
-                        <button type="button" class="tab-btn active" id="brushEraseBtn">🧹 Esborrar</button>
-                        <button type="button" class="tab-btn" id="brushRestoreBtn">🖌️ Restaurar</button>
-                    </div>
-                    <div class="control-group" style="margin-top:6px;">
-                        <label for="brushSize">Mida del pinzell: <strong id="brushSizeVal">25px</strong></label>
-                        <input type="range" id="brushSize" min="5" max="90" value="25">
-                    </div>
-                    <button type="button" id="resetMaskBtn" style="background:#6c757d; font-size:12px; padding:6px; margin-top:4px;">
-                        ↺ Reiniciar màscara de la IA
-                    </button>
-                </div>
-
-                <div class="controls-divider"></div>
-                <div class="section-title">3. Exportació</div>
-
-                <!-- Format Selection -->
-                <div class="control-group">
-                    <label for="exportFormat">Format de Descàrrega:</label>
-                    <select id="exportFormat">
-                        <option value="image/png">PNG (.png - Amb transparència)</option>
-                        <option value="image/jpeg">JPEG (.jpg - Qualitat alta)</option>
-                        <option value="image/webp">WEBP (.webp - Web optimitzat)</option>
-                    </select>
-                </div>
-
-                <!-- Action Buttons -->
-                <button id="copyBtn" disabled style="background-color: #007bff; margin-bottom: 3px;">
-                    📋 Copiar al Porta-retalls
-                </button>
-                <button id="downloadCurrentBtn" disabled style="background-color: #28a745;">
-                    ⬇️ Descarregar Imatge
-                </button>
-                <button id="downloadZipBtn" disabled style="background-color: #16a34a;">
-                    📦 Descarregar Totes (.ZIP)
-                </button>
-                <button id="clearAllBtn" class="clear-all-btn">
-                    🗑️ Netejar-ho Tot
-                </button>
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="imgInput">Seleccionar Imágenes:</label>
+                <input type="file" id="imgInput" accept="image/*" multiple>
             </div>
 
-            <!-- Right Preview Area -->
-            <div class="preview-area">
-                <!-- Toolbar with View Modes & Resolution Info -->
-                <div class="preview-toolbar">
-                    <div class="view-mode-buttons">
-                        <button type="button" class="active" id="viewModeResult">Resultat</button>
-                        <button type="button" id="viewModeSplit">Comparativa Abans / Després</button>
-                        <button type="button" id="viewModeMask">Màscara Alfa</button>
-                    </div>
-                    <div class="resolution-tag" id="resolutionTag">Sense imatge seleccionada</div>
-                </div>
+            <div class="status-text" id="statusLabel">Listo para procesar</div>
 
-                <!-- Main Canvas Workspace -->
-                <div class="canvas-container" id="canvasContainer">
-                    <div id="brushCursor"></div>
-                    <div class="comparison-slider" id="comparisonSlider">
-                        <div class="comparison-handle">⇄</div>
-                    </div>
-                    <canvas id="mainCanvas"></canvas>
-                </div>
-
-                <!-- Bottom Thumbnail Gallery -->
-                <div class="gallery" id="gallery"></div>
-                <button id="deleteCurrentBtn" class="delete-current-btn" disabled>Borrar Imatge Seleccionada</button>
+            <div class="control-group">
+                <label for="bgType">Tipo de Fondo:</label>
+                <select id="bgType">
+                    <option value="transparent">Transparente</option>
+                    <option value="color">Color Sólido</option>
+                    <option value="image">Imagen Personalizada</option>
+                    <option value="blur">Desenfocar Fondo Original</option>
+                </select>
             </div>
+
+            <div class="control-group hidden" id="colorGroup">
+                <label for="bgColor">Color de Fondo:</label>
+                <input type="color" id="bgColor" value="#ffffff" style="height: 38px; width: 100%;">
+            </div>
+
+            <div class="control-group hidden" id="customBgGroup">
+                <label for="customBgInput">Subir Imagen de Fondo:</label>
+                <input type="file" id="customBgInput" accept="image/*">
+            </div>
+
+            <div class="control-group hidden" id="blurGroup">
+                <label for="blurAmount">Nivel de Desenfocado: <strong id="blurVal">12px</strong></label>
+                <input type="range" id="blurAmount" min="2" max="30" value="12">
+            </div>
+
+            <div class="control-group">
+                <label style="cursor: pointer;">
+                    <input type="checkbox" id="brushToggle"> <strong>Pincel de Retoque</strong>
+                </label>
+            </div>
+
+            <div class="control-group hidden" id="brushControls">
+                <div class="quick-btn-group">
+                    <button type="button" id="btnErase" style="background-color: #dc3545; flex: 1;">Borrar</button>
+                    <button type="button" id="btnRestore" style="background-color: #6c757d; flex: 1;">Restaurar</button>
+                </div>
+                <label for="brushSize" style="margin-top: 6px;">Tamaño del Pincel: <strong id="brushSizeVal">25px</strong></label>
+                <input type="range" id="brushSize" min="5" max="80" value="25">
+                <button type="button" id="btnResetMask" style="background-color: #6c757d; font-size: 12px; padding: 4px; margin-top: 4px;">Reiniciar Máscara</button>
+            </div>
+
+            <div class="control-group">
+                <label for="exportFormat">Formato de Descarga:</label>
+                <select id="exportFormat">
+                    <option value="image/png">PNG (.png)</option>
+                    <option value="image/jpeg">JPEG (.jpg)</option>
+                    <option value="image/webp">WEBP (.webp)</option>
+                </select>
+            </div>
+
+            <button id="copyBtn" disabled style="background-color: #007bff; margin-bottom: 5px;">Copiar al Portapapeles</button>
+            <button id="downloadSingleBtn" disabled style="margin-bottom: 5px;">Descargar Imagen</button>
+            <button id="downloadZipBtn" disabled>Descargar Todas (.ZIP)</button>
+            <button id="clearAllBtn" class="clear-all-btn">Limpiar Todo</button>
+        </div>
+
+        <div class="preview-area">
+            <div class="gallery" id="gallery"></div>
+            <div class="canvas-wrap" id="canvasWrap">
+                <div id="brushCursor"></div>
+                <canvas id="canvas"></canvas>
+            </div>
+            <button id="deleteCurrentBtn" class="delete-current-btn" disabled>Borrar Imagen Seleccionada</button>
         </div>
     </div>
 
-    <!-- Script Application -->
     <script type="module">
-        // Import background removal AI
         let removeBackgroundFn = null;
-        let aiLoaded = false;
-        let aiLoading = false;
 
-        // Dynamic ESM load with fallback
-        async function loadAIEngine() {
-            if (aiLoaded) return true;
-            if (aiLoading) return false;
-            aiLoading = true;
-            updateStatus('Carregant motor d\'IA local...', true, 10);
-
+        // Load background removal engine
+        async function getRemover() {
+            if (removeBackgroundFn) return removeBackgroundFn;
             try {
-                const imglyModule = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.7/+esm');
-                if (imglyModule && imglyModule.removeBackground) {
-                    removeBackgroundFn = imglyModule.removeBackground;
-                    aiLoaded = true;
-                    aiLoading = false;
-                    updateStatus('Motor IA llest (BiRefNet / ISNet)', false, 100);
-                    setTimeout(() => hideProgressBar(), 1500);
-                    return true;
+                const imgly = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.7/+esm');
+                if (imgly && imgly.removeBackground) {
+                    removeBackgroundFn = imgly.removeBackground;
+                    return removeBackgroundFn;
                 }
-            } catch (err) {
-                console.warn('Imgly CDN no disponible o error, intentant carregador alternatiu:', err);
+            } catch (e) {
+                console.warn('Cargando motor de respaldo:', e);
             }
 
             try {
-                // Secondary fallback: Transformers.js RMBG-1.4
-                updateStatus('Carregant Transformers.js RMBG...', true, 40);
                 const tf = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
                 if (tf && tf.pipeline) {
                     const segmenter = await tf.pipeline('image-segmentation', 'briaai/RMBG-1.4');
-                    removeBackgroundFn = async (imgSource) => {
-                        const raw = await tf.RawImage.fromCanvas(imgSource);
-                        const result = await segmenter(raw);
-                        const maskRaw = Array.isArray(result) ? result[0].mask : (result.mask || result);
-                        const maskCanvas = maskRaw.toCanvas();
-                        
-                        // Create cutout blob
+                    removeBackgroundFn = async (img) => {
+                        const raw = await tf.RawImage.fromCanvas(img);
+                        const res = await segmenter(raw);
+                        const maskRaw = Array.isArray(res) ? res[0].mask : (res.mask || res);
+                        const mCanvas = maskRaw.toCanvas();
                         const c = document.createElement('canvas');
-                        c.width = imgSource.width;
-                        c.height = imgSource.height;
+                        c.width = img.naturalWidth || img.width;
+                        c.height = img.naturalHeight || img.height;
                         const ctx = c.getContext('2d');
-                        ctx.drawImage(imgSource, 0, 0);
+                        ctx.drawImage(img, 0, 0, c.width, c.height);
                         ctx.globalCompositeOperation = 'destination-in';
-                        ctx.drawImage(maskCanvas, 0, 0, c.width, c.height);
-                        return new Promise(res => c.toBlob(res, 'image/png'));
+                        ctx.drawImage(mCanvas, 0, 0, c.width, c.height);
+                        return new Promise(r => c.toBlob(r, 'image/png'));
                     };
-                    aiLoaded = true;
-                    aiLoading = false;
-                    updateStatus('Motor IA RMBG-1.4 llest', false, 100);
-                    setTimeout(() => hideProgressBar(), 1500);
-                    return true;
+                    return removeBackgroundFn;
                 }
-            } catch (err2) {
-                console.warn('Transformers.js no disponible, activant motor Color-Key local:', err2);
+            } catch (e) {
+                console.warn('Fallback a matting de color local:', e);
             }
 
-            // Fallback: Smart local canvas chroma & edge matting (runs 100% offline)
-            removeBackgroundFn = async (imgElement) => {
-                return fallbackChromaMatting(imgElement);
-            };
-            aiLoaded = true;
-            aiLoading = false;
-            updateStatus('Motor local actiu (Color Matting)', false, 100);
-            setTimeout(() => hideProgressBar(), 1500);
-            return true;
-        }
-
-        // Fallback chroma & edge background matting
-        function fallbackChromaMatting(img) {
-            return new Promise((resolve) => {
+            // Local fallback (offline chroma key)
+            removeBackgroundFn = async (img) => {
                 const c = document.createElement('canvas');
                 const w = img.naturalWidth || img.width;
                 const h = img.naturalHeight || img.height;
@@ -814,313 +329,134 @@
                 c.height = h;
                 const ctx = c.getContext('2d');
                 ctx.drawImage(img, 0, 0, w, h);
-                const imgData = ctx.getImageData(0, 0, w, h);
-                const d = imgData.data;
-
-                // Sample corners to detect background color
+                const data = ctx.getImageData(0, 0, w, h);
+                const d = data.data;
                 const corners = [0, (w - 1) * 4, ((h - 1) * w) * 4, ((h - 1) * w + w - 1) * 4];
-                let bgR = 0, bgG = 0, bgB = 0;
-                corners.forEach(idx => {
-                    bgR += d[idx];
-                    bgG += d[idx + 1];
-                    bgB += d[idx + 2];
-                });
-                bgR /= corners.length;
-                bgG /= corners.length;
-                bgB /= corners.length;
-
-                const threshold = 38;
+                let r = 0, g = 0, b = 0;
+                corners.forEach(i => { r += d[i]; g += d[i+1]; b += d[i+2]; });
+                r /= 4; g /= 4; b /= 4;
                 for (let i = 0; i < d.length; i += 4) {
-                    const r = d[i], g = d[i + 1], b = d[i + 2];
-                    const dist = Math.sqrt((r - bgR)**2 + (g - bgG)**2 + (b - bgB)**2);
-                    if (dist < threshold) {
-                        d[i + 3] = 0; // Transparent
-                    } else if (dist < threshold + 18) {
-                        d[i + 3] = Math.round(((dist - threshold) / 18) * 255);
-                    }
+                    const dist = Math.hypot(d[i]-r, d[i+1]-g, d[i+2]-b);
+                    if (dist < 36) d[i+3] = 0;
+                    else if (dist < 50) d[i+3] = Math.round(((dist - 36) / 14) * 255);
                 }
-                ctx.putImageData(imgData, 0, 0);
-                c.toBlob(resolve, 'image/png');
-            });
+                ctx.putImageData(data, 0, 0);
+                return new Promise(res => c.toBlob(res, 'image/png'));
+            };
+            return removeBackgroundFn;
         }
 
-        // UI elements
-        const statusContainer = document.getElementById('statusContainer');
-        const statusSpinner = document.getElementById('statusSpinner');
-        const statusText = document.getElementById('statusText');
-        const progressBarBg = document.getElementById('progressBarBg');
-        const progressBarFill = document.getElementById('progressBarFill');
-
         const imgInput = document.getElementById('imgInput');
-        const mainCanvas = document.getElementById('mainCanvas');
-        const canvasCtx = mainCanvas.getContext('2d');
-        const canvasContainer = document.getElementById('canvasContainer');
-        const gallery = document.getElementById('gallery');
-        const deleteCurrentBtn = document.getElementById('deleteCurrentBtn');
-        const clearAllBtn = document.getElementById('clearAllBtn');
-        const copyBtn = document.getElementById('copyBtn');
-        const downloadCurrentBtn = document.getElementById('downloadCurrentBtn');
-        const downloadZipBtn = document.getElementById('downloadZipBtn');
-        const exportFormatSelect = document.getElementById('exportFormat');
-        const resolutionTag = document.getElementById('resolutionTag');
-
-        // Tabs & Background controls
-        const bgTabs = document.querySelectorAll('#bgTabs .tab-btn');
-        const tabTransparentContent = document.getElementById('tabTransparentContent');
-        const tabColorContent = document.getElementById('tabColorContent');
-        const tabImageContent = document.getElementById('tabImageContent');
-        const tabBlurContent = document.getElementById('tabBlurContent');
-        const bgColorPicker = document.getElementById('bgColorPicker');
-        const bgColorText = document.getElementById('bgColorText');
-        const colorSwatches = document.querySelectorAll('.swatch');
+        const statusLabel = document.getElementById('statusLabel');
+        const bgType = document.getElementById('bgType');
+        const colorGroup = document.getElementById('colorGroup');
+        const bgColor = document.getElementById('bgColor');
+        const customBgGroup = document.getElementById('customBgGroup');
         const customBgInput = document.getElementById('customBgInput');
-        const bgPresetsGrid = document.getElementById('bgPresetsGrid');
-        const blurRange = document.getElementById('blurRange');
+        const blurGroup = document.getElementById('blurGroup');
+        const blurAmount = document.getElementById('blurAmount');
         const blurVal = document.getElementById('blurVal');
 
-        // Brush controls
-        const brushModeToggle = document.getElementById('brushModeToggle');
-        const brushPanel = document.getElementById('brushPanel');
-        const brushEraseBtn = document.getElementById('brushEraseBtn');
-        const brushRestoreBtn = document.getElementById('brushRestoreBtn');
-        const brushSizeInput = document.getElementById('brushSize');
+        const brushToggle = document.getElementById('brushToggle');
+        const brushControls = document.getElementById('brushControls');
+        const btnErase = document.getElementById('btnErase');
+        const btnRestore = document.getElementById('btnRestore');
+        const brushSize = document.getElementById('brushSize');
         const brushSizeVal = document.getElementById('brushSizeVal');
-        const resetMaskBtn = document.getElementById('resetMaskBtn');
+        const btnResetMask = document.getElementById('btnResetMask');
         const brushCursor = document.getElementById('brushCursor');
 
-        // View Modes
-        const viewModeResult = document.getElementById('viewModeResult');
-        const viewModeSplit = document.getElementById('viewModeSplit');
-        const viewModeMask = document.getElementById('viewModeMask');
-        const comparisonSlider = document.getElementById('comparisonSlider');
+        const exportFormat = document.getElementById('exportFormat');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadSingleBtn = document.getElementById('downloadSingleBtn');
+        const downloadZipBtn = document.getElementById('downloadZipBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const deleteCurrentBtn = document.getElementById('deleteCurrentBtn');
 
-        // State
-        let loadedImages = []; // { name, origImg, maskCanvas, origMaskCanvas, isProcessing }
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasWrap = document.getElementById('canvasWrap');
+        const gallery = document.getElementById('gallery');
+
+        let loadedImages = [];
         let selectedIndex = -1;
-        let currentBgMode = 'transparent'; // 'transparent' | 'color' | 'image' | 'blur'
-        let currentBgColor = '#ffffff';
-        let currentBgImg = null;
-        let currentBlur = 12;
-        let currentViewMode = 'result'; // 'result' | 'split' | 'mask'
-        let splitRatio = 0.5; // for comparison slider
-        let isDraggingSplit = false;
+        let customBgImage = null;
 
-        // Brush State
         let isBrushActive = false;
-        let brushTool = 'erase'; // 'erase' | 'restore'
+        let brushMode = 'erase';
         let brushRadius = 25;
         let isPainting = false;
 
-        // Built-in Background Presets
-        const builtInPresets = [
-            { id: 'studio', name: 'Estudi', grad: 'radial-gradient(circle, #f8fafc 0%, #cbd5e1 100%)' },
-            { id: 'warm', name: 'Càlid', grad: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #f59e0b 100%)' },
-            { id: 'mesh', name: 'Pastís', grad: 'linear-gradient(135deg, #e0e7ff 0%, #fae8ff 50%, #fce7f3 100%)' },
-            { id: 'dark', name: 'Dark Room', grad: 'radial-gradient(circle, #334155 0%, #0f172a 100%)' },
-            { id: 'sunset', name: 'Atardecer', grad: 'linear-gradient(180deg, #fdba74 0%, #f43f5e 100%)' },
-            { id: 'cyber', name: 'Neó', grad: 'linear-gradient(135deg, #09090b 0%, #1e1b4b 60%, #4338ca 100%)' }
-        ];
-
-        function initPresets() {
-            bgPresetsGrid.innerHTML = '';
-            builtInPresets.forEach((p, idx) => {
-                const item = document.createElement('div');
-                item.className = 'bg-preset-thumb';
-                item.style.background = p.grad;
-                item.innerHTML = `<span class="bg-preset-label">${p.name}</span>`;
-                item.addEventListener('click', () => {
-                    document.querySelectorAll('.bg-preset-thumb').forEach(el => el.classList.remove('active'));
-                    item.classList.add('active');
-                    createPresetBackgroundCanvas(p.grad);
-                });
-                bgPresetsGrid.appendChild(item);
-            });
-        }
-
-        function createPresetBackgroundCanvas(gradientCSS) {
-            if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
-            const w = loadedImages[selectedIndex].origImg.naturalWidth;
-            const h = loadedImages[selectedIndex].origImg.naturalHeight;
-            const bgCanvas = document.createElement('canvas');
-            bgCanvas.width = w;
-            bgCanvas.height = h;
-            const bCtx = bgCanvas.getContext('2d');
-
-            // Draw procedural gradient
-            const grad = bCtx.createLinearGradient(0, 0, w, h);
-            if (gradientCSS.includes('radial')) {
-                const rGrad = bCtx.createRadialGradient(w/2, h/2, 20, w/2, h/2, Math.max(w,h)/1.2);
-                rGrad.addColorStop(0, '#f8fafc');
-                rGrad.addColorStop(1, '#94a3b8');
-                bCtx.fillStyle = rGrad;
-            } else if (gradientCSS.includes('sunset')) {
-                grad.addColorStop(0, '#fb923c');
-                grad.addColorStop(1, '#e11d48');
-                bCtx.fillStyle = grad;
-            } else if (gradientCSS.includes('dark')) {
-                grad.addColorStop(0, '#1e293b');
-                grad.addColorStop(1, '#020617');
-                bCtx.fillStyle = grad;
-            } else if (gradientCSS.includes('mesh')) {
-                grad.addColorStop(0, '#c7d2fe');
-                grad.addColorStop(0.5, '#f5d0fe');
-                grad.addColorStop(1, '#fed7aa');
-                bCtx.fillStyle = grad;
-            } else if (gradientCSS.includes('cyber')) {
-                grad.addColorStop(0, '#09090b');
-                grad.addColorStop(0.6, '#1e1b4b');
-                grad.addColorStop(1, '#6366f1');
-                bCtx.fillStyle = grad;
-            } else {
-                grad.addColorStop(0, '#fef3c7');
-                grad.addColorStop(1, '#f59e0b');
-                bCtx.fillStyle = grad;
-            }
-            bCtx.fillRect(0, 0, w, h);
-            currentBgImg = bgCanvas;
-            renderCurrent();
-        }
-
-        function updateStatus(msg, isSpinning = false, progressPercent = null) {
-            statusText.textContent = msg;
-            if (isSpinning) {
-                statusSpinner.classList.remove('hidden');
-            } else {
-                statusSpinner.classList.add('hidden');
-            }
-            if (progressPercent !== null) {
-                progressBarBg.style.display = 'block';
-                progressBarFill.style.width = `${progressPercent}%`;
-            }
-        }
-
-        function hideProgressBar() {
-            progressBarBg.style.display = 'none';
-            progressBarFill.style.width = '0%';
-        }
-
-        // Initialize
-        window.addEventListener('DOMContentLoaded', async () => {
-            initPresets();
-            await loadAIEngine();
-        });
-
-        // Tab Switching
-        bgTabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                bgTabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentBgMode = tab.dataset.tab;
-
-                tabTransparentContent.classList.add('hidden');
-                tabColorContent.classList.add('hidden');
-                tabImageContent.classList.add('hidden');
-                tabBlurContent.classList.add('hidden');
-
-                if (currentBgMode === 'transparent') tabTransparentContent.classList.remove('hidden');
-                if (currentBgMode === 'color') tabColorContent.classList.remove('hidden');
-                if (currentBgMode === 'image') tabImageContent.classList.remove('hidden');
-                if (currentBgMode === 'blur') tabBlurContent.classList.remove('hidden');
-
-                renderCurrent();
-            });
-        });
-
-        // Color handling
-        bgColorPicker.addEventListener('input', (e) => {
-            currentBgColor = e.target.value;
-            bgColorText.value = currentBgColor;
-            colorSwatches.forEach(s => s.classList.remove('active'));
+        // Background type changes
+        bgType.addEventListener('change', () => {
+            colorGroup.classList.add('hidden');
+            customBgGroup.classList.add('hidden');
+            blurGroup.classList.add('hidden');
+            if (bgType.value === 'color') colorGroup.classList.remove('hidden');
+            if (bgType.value === 'image') customBgGroup.classList.remove('hidden');
+            if (bgType.value === 'blur') blurGroup.classList.remove('hidden');
             renderCurrent();
         });
-        bgColorText.addEventListener('input', (e) => {
-            currentBgColor = e.target.value;
-            bgColorPicker.value = currentBgColor;
+
+        bgColor.addEventListener('input', renderCurrent);
+        blurAmount.addEventListener('input', () => {
+            blurVal.textContent = `${blurAmount.value}px`;
             renderCurrent();
         });
-        colorSwatches.forEach(swatch => {
-            swatch.addEventListener('click', () => {
-                colorSwatches.forEach(s => s.classList.remove('active'));
-                swatch.classList.add('active');
-                currentBgColor = swatch.dataset.color;
-                bgColorPicker.value = currentBgColor;
-                bgColorText.value = currentBgColor;
-                renderCurrent();
-            });
-        });
 
-        // Custom background image upload
         customBgInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
+            const r = new FileReader();
+            r.onload = (evt) => {
                 const img = new Image();
-                img.onload = () => {
-                    currentBgImg = img;
-                    document.querySelectorAll('.bg-preset-thumb').forEach(el => el.classList.remove('active'));
-                    renderCurrent();
-                };
+                img.onload = () => { customBgImage = img; renderCurrent(); };
                 img.src = evt.target.result;
             };
-            reader.readAsDataURL(file);
+            r.readAsDataURL(file);
         });
 
-        // Blur slider
-        window.setBlur = function(val) {
-            blurRange.value = val;
-            blurVal.textContent = `${val}px`;
-            currentBlur = val;
-            renderCurrent();
-        };
-        blurRange.addEventListener('input', (e) => {
-            currentBlur = parseInt(e.target.value, 10);
-            blurVal.textContent = `${currentBlur}px`;
-            renderCurrent();
-        });
-
-        // Brush mode toggle
-        brushModeToggle.addEventListener('change', (e) => {
-            isBrushActive = e.target.checked;
+        // Brush setup
+        brushToggle.addEventListener('change', () => {
+            isBrushActive = brushToggle.checked;
             if (isBrushActive) {
-                brushPanel.classList.remove('hidden');
+                brushControls.classList.remove('hidden');
                 brushCursor.style.display = 'block';
-                mainCanvas.style.cursor = 'none';
+                canvas.style.cursor = 'none';
             } else {
-                brushPanel.classList.add('hidden');
+                brushControls.classList.add('hidden');
                 brushCursor.style.display = 'none';
-                mainCanvas.style.cursor = 'default';
+                canvas.style.cursor = 'default';
             }
         });
-        brushEraseBtn.addEventListener('click', () => {
-            brushTool = 'erase';
-            brushEraseBtn.classList.add('active');
-            brushRestoreBtn.classList.remove('active');
-            brushCursor.style.borderColor = '#dc3545';
-            brushCursor.style.background = 'rgba(220, 53, 69, 0.15)';
+
+        btnErase.addEventListener('click', () => {
+            brushMode = 'erase';
+            btnErase.style.backgroundColor = '#dc3545';
+            btnRestore.style.backgroundColor = '#6c757d';
         });
-        brushRestoreBtn.addEventListener('click', () => {
-            brushTool = 'restore';
-            brushRestoreBtn.classList.add('active');
-            brushEraseBtn.classList.remove('active');
-            brushCursor.style.borderColor = '#28a745';
-            brushCursor.style.background = 'rgba(40, 167, 69, 0.15)';
+
+        btnRestore.addEventListener('click', () => {
+            brushMode = 'restore';
+            btnRestore.style.backgroundColor = '#28a745';
+            btnErase.style.backgroundColor = '#6c757d';
         });
-        brushSizeInput.addEventListener('input', (e) => {
-            brushRadius = parseInt(e.target.value, 10);
+
+        brushSize.addEventListener('input', () => {
+            brushRadius = parseInt(brushSize.value, 10);
             brushSizeVal.textContent = `${brushRadius}px`;
-            updateBrushCursorSize();
+            updateBrushCursor();
         });
-        function updateBrushCursorSize() {
-            const rect = mainCanvas.getBoundingClientRect();
-            const scaleX = rect.width / mainCanvas.width;
-            const displayDiameter = (brushRadius * 2) * scaleX;
-            brushCursor.style.width = `${Math.max(displayDiameter, 8)}px`;
-            brushCursor.style.height = `${Math.max(displayDiameter, 8)}px`;
+
+        function updateBrushCursor() {
+            const rect = canvas.getBoundingClientRect();
+            const scale = rect.width / canvas.width;
+            const size = (brushRadius * 2) * scale;
+            brushCursor.style.width = `${Math.max(size, 6)}px`;
+            brushCursor.style.height = `${Math.max(size, 6)}px`;
         }
 
-        // Reset mask button
-        resetMaskBtn.addEventListener('click', () => {
+        btnResetMask.addEventListener('click', () => {
             if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
             const item = loadedImages[selectedIndex];
             const mCtx = item.maskCanvas.getContext('2d');
@@ -1129,85 +465,40 @@
             renderCurrent();
         });
 
-        // View Mode buttons
-        viewModeResult.addEventListener('click', () => setViewMode('result'));
-        viewModeSplit.addEventListener('click', () => setViewMode('split'));
-        viewModeMask.addEventListener('click', () => setViewMode('mask'));
-
-        function setViewMode(mode) {
-            currentViewMode = mode;
-            [viewModeResult, viewModeSplit, viewModeMask].forEach(b => b.classList.remove('active'));
-            if (mode === 'result') viewModeResult.classList.add('active');
-            if (mode === 'split') viewModeSplit.classList.add('active');
-            if (mode === 'mask') viewModeMask.classList.add('active');
-
-            if (mode === 'split') {
-                comparisonSlider.style.display = 'block';
-                updateComparisonSliderPosition();
-            } else {
-                comparisonSlider.style.display = 'none';
-            }
-            renderCurrent();
-        }
-
-        function updateComparisonSliderPosition() {
-            const rect = mainCanvas.getBoundingClientRect();
-            const containerRect = canvasContainer.getBoundingClientRect();
-            const leftOffset = (rect.left - containerRect.left) + rect.width * splitRatio;
-            comparisonSlider.style.left = `${leftOffset}px`;
-            comparisonSlider.style.top = `${rect.top - containerRect.top}px`;
-            comparisonSlider.style.height = `${rect.height}px`;
-        }
-
-        // Comparison Slider Dragging
-        comparisonSlider.addEventListener('mousedown', (e) => {
-            isDraggingSplit = true;
-            e.preventDefault();
-        });
-        window.addEventListener('mouseup', () => {
-            isDraggingSplit = false;
-            isPainting = false;
-        });
-        window.addEventListener('mousemove', (e) => {
-            if (isDraggingSplit) {
-                const rect = mainCanvas.getBoundingClientRect();
-                const pos = (e.clientX - rect.left) / rect.width;
-                splitRatio = Math.max(0.02, Math.min(0.98, pos));
-                updateComparisonSliderPosition();
-                renderCurrent();
-            }
-        });
-
-        // Brush Painting on Canvas
-        mainCanvas.addEventListener('mouseenter', () => {
+        // Canvas events for brush
+        canvas.addEventListener('mouseenter', () => {
             if (isBrushActive) brushCursor.style.display = 'block';
         });
-        mainCanvas.addEventListener('mouseleave', () => {
+        canvas.addEventListener('mouseleave', () => {
             brushCursor.style.display = 'none';
             isPainting = false;
         });
-        mainCanvas.addEventListener('mousemove', (e) => {
-            if (!isBrushActive) return;
-            const containerRect = canvasContainer.getBoundingClientRect();
-            brushCursor.style.left = `${e.clientX - containerRect.left}px`;
-            brushCursor.style.top = `${e.clientY - containerRect.top}px`;
-            updateBrushCursorSize();
+        window.addEventListener('mouseup', () => isPainting = false);
 
-            if (isPainting && selectedIndex !== -1 && loadedImages[selectedIndex]) {
-                applyBrushStroke(e);
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isBrushActive) return;
+            const wrapRect = canvasWrap.getBoundingClientRect();
+            brushCursor.style.left = `${e.clientX - wrapRect.left}px`;
+            brushCursor.style.top = `${e.clientY - wrapRect.top}px`;
+            updateBrushCursor();
+
+            if (isPainting && selectedIndex !== -1) {
+                applyBrush(e);
             }
         });
-        mainCanvas.addEventListener('mousedown', (e) => {
-            if (!isBrushActive || selectedIndex === -1 || !loadedImages[selectedIndex]) return;
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!isBrushActive || selectedIndex === -1) return;
             isPainting = true;
-            applyBrushStroke(e);
+            applyBrush(e);
         });
 
-        function applyBrushStroke(e) {
+        function applyBrush(e) {
             const item = loadedImages[selectedIndex];
-            const rect = mainCanvas.getBoundingClientRect();
-            const scaleX = mainCanvas.width / rect.width;
-            const scaleY = mainCanvas.height / rect.height;
+            if (!item || !item.maskCanvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
             const x = (e.clientX - rect.left) * scaleX;
             const y = (e.clientY - rect.top) * scaleY;
 
@@ -1215,12 +506,10 @@
             mCtx.save();
             mCtx.beginPath();
             mCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
-
-            if (brushTool === 'erase') {
+            if (brushMode === 'erase') {
                 mCtx.globalCompositeOperation = 'destination-out';
                 mCtx.fill();
             } else {
-                // Restore original mask
                 mCtx.globalCompositeOperation = 'source-over';
                 mCtx.fillStyle = '#ffffff';
                 mCtx.fill();
@@ -1229,7 +518,14 @@
             renderCurrent();
         }
 
-        // Paste support
+        // File loading & paste
+        imgInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            await processFiles(files);
+            imgInput.value = '';
+        });
+
         window.addEventListener('paste', async (e) => {
             const items = e.clipboardData.items;
             const files = [];
@@ -1237,141 +533,78 @@
                 if (item.type.indexOf('image') !== -1) {
                     const blob = item.getAsFile();
                     if (blob) {
-                        const file = new File([blob], `enganxat_${Date.now()}.png`, { type: blob.type });
+                        const file = new File([blob], `pegado_${Date.now()}.png`, { type: blob.type });
                         files.push(file);
                     }
                 }
             }
-            if (files.length > 0) {
-                await processIncomingFiles(files);
-            }
+            if (files.length > 0) await processFiles(files);
         });
 
-        // Drag & Drop
         window.addEventListener('dragover', (e) => e.preventDefault());
         window.addEventListener('drop', async (e) => {
             e.preventDefault();
             const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-            if (files.length > 0) {
-                await processIncomingFiles(files);
-            }
+            if (files.length > 0) await processFiles(files);
         });
 
-        imgInput.addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-            await processIncomingFiles(files);
-            imgInput.value = '';
-        });
-
-        // File processing queue
-        async function processIncomingFiles(files) {
-            await loadAIEngine();
-
+        async function processFiles(files) {
+            const remover = await getRemover();
             for (let file of files) {
-                const img = await fileToImage(file);
+                const img = await loadImage(file);
                 const item = {
                     name: file.name,
-                    origImg: img,
+                    img: img,
                     maskCanvas: null,
                     origMaskCanvas: null,
-                    isProcessing: true
+                    processing: true
                 };
                 loadedImages.push(item);
-                const itemIndex = loadedImages.length - 1;
-                selectedIndex = itemIndex;
+                selectedIndex = loadedImages.length - 1;
                 renderGallery();
-                updateActiveThumbnail();
 
-                // Process with AI
-                processImageWithAI(item, itemIndex);
+                statusLabel.textContent = `Procesando ${file.name}...`;
+                try {
+                    const blob = await remover(img);
+                    const cutout = await blobToImage(blob);
+                    const w = img.naturalWidth || img.width;
+                    const h = img.naturalHeight || img.height;
+
+                    const maskCanvas = document.createElement('canvas');
+                    maskCanvas.width = w;
+                    maskCanvas.height = h;
+                    const mCtx = maskCanvas.getContext('2d');
+                    mCtx.drawImage(cutout, 0, 0, w, h);
+
+                    const origMaskCanvas = document.createElement('canvas');
+                    origMaskCanvas.width = w;
+                    origMaskCanvas.height = h;
+                    origMaskCanvas.getContext('2d').drawImage(maskCanvas, 0, 0);
+
+                    item.maskCanvas = maskCanvas;
+                    item.origMaskCanvas = origMaskCanvas;
+                    item.processing = false;
+                    statusLabel.textContent = 'Procesado';
+                } catch (err) {
+                    console.error(err);
+                    statusLabel.textContent = 'Error procesando';
+                    item.processing = false;
+                }
+                renderGallery();
+                renderCurrent();
             }
         }
 
-        function fileToImage(file) {
+        function loadImage(file) {
             return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
+                const r = new FileReader();
+                r.onload = (e) => {
                     const img = new Image();
                     img.onload = () => resolve(img);
                     img.src = e.target.result;
                 };
-                reader.readAsDataURL(file);
+                r.readAsDataURL(file);
             });
-        }
-
-        async function processImageWithAI(item, index) {
-            updateStatus(`Processant "${item.name}" amb IA...`, true, 50);
-
-            try {
-                // Call background removal function
-                const blob = await removeBackgroundFn(item.origImg);
-                const cutoutImg = await blobToImage(blob);
-
-                // Create mask canvas preserving full original dimensions
-                const w = item.origImg.naturalWidth;
-                const h = item.origImg.naturalHeight;
-
-                const maskCanvas = document.createElement('canvas');
-                maskCanvas.width = w;
-                maskCanvas.height = h;
-                const mCtx = maskCanvas.getContext('2d');
-                mCtx.imageSmoothingEnabled = true;
-                mCtx.imageSmoothingQuality = 'high';
-                mCtx.drawImage(cutoutImg, 0, 0, w, h);
-
-                // Convert to clean alpha mask
-                const imgData = mCtx.getImageData(0, 0, w, h);
-                const d = imgData.data;
-                for (let i = 0; i < d.length; i += 4) {
-                    const alpha = d[i + 3];
-                    d[i] = 255;
-                    d[i + 1] = 255;
-                    d[i + 2] = 255;
-                    d[i + 3] = alpha;
-                }
-                mCtx.putImageData(imgData, 0, 0);
-
-                // Clone for reset
-                const origMaskCanvas = document.createElement('canvas');
-                origMaskCanvas.width = w;
-                origMaskCanvas.height = h;
-                origMaskCanvas.getContext('2d').drawImage(maskCanvas, 0, 0);
-
-                item.maskCanvas = maskCanvas;
-                item.origMaskCanvas = origMaskCanvas;
-                item.isProcessing = false;
-
-                updateStatus(`Fet! "${item.name}" processada sense pèrdua de qualitat.`, false, 100);
-                setTimeout(() => hideProgressBar(), 1000);
-            } catch (err) {
-                console.error('Error processant imatge:', err);
-                // Fallback to chroma
-                const blob = await fallbackChromaMatting(item.origImg);
-                const cutoutImg = await blobToImage(blob);
-                const w = item.origImg.naturalWidth;
-                const h = item.origImg.naturalHeight;
-                const maskCanvas = document.createElement('canvas');
-                maskCanvas.width = w;
-                maskCanvas.height = h;
-                const mCtx = maskCanvas.getContext('2d');
-                mCtx.drawImage(cutoutImg, 0, 0, w, h);
-
-                const origMaskCanvas = document.createElement('canvas');
-                origMaskCanvas.width = w;
-                origMaskCanvas.height = h;
-                origMaskCanvas.getContext('2d').drawImage(maskCanvas, 0, 0);
-
-                item.maskCanvas = maskCanvas;
-                item.origMaskCanvas = origMaskCanvas;
-                item.isProcessing = false;
-                updateStatus(`Processat amb motor local alternatiu.`, false);
-            }
-
-            renderGallery();
-            if (selectedIndex === index) {
-                renderCurrent();
-            }
         }
 
         function blobToImage(blob) {
@@ -1382,159 +615,99 @@
             });
         }
 
-        // Render current preview on canvas
         function renderCurrent() {
             if (selectedIndex === -1 || !loadedImages[selectedIndex]) {
-                mainCanvas.width = 0;
-                mainCanvas.height = 0;
-                resolutionTag.textContent = 'Sense imatge seleccionada';
+                canvas.width = 0;
+                canvas.height = 0;
                 return;
             }
 
             const item = loadedImages[selectedIndex];
-            const origImg = item.origImg;
-            const w = origImg.naturalWidth;
-            const h = origImg.naturalHeight;
+            const img = item.img;
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
 
-            mainCanvas.width = w;
-            mainCanvas.height = h;
-            resolutionTag.textContent = `${w} × ${h} px • 100% Resolució original`;
+            canvas.width = w;
+            canvas.height = h;
 
-            if (item.isProcessing || !item.maskCanvas) {
-                // Draw original while processing
-                canvasCtx.drawImage(origImg, 0, 0);
+            if (item.processing || !item.maskCanvas) {
+                ctx.drawImage(img, 0, 0, w, h);
                 return;
             }
 
-            if (currentViewMode === 'mask') {
-                // View alpha mask only
-                canvasCtx.fillStyle = '#000000';
-                canvasCtx.fillRect(0, 0, w, h);
-                canvasCtx.drawImage(item.maskCanvas, 0, 0);
-                return;
+            // 1. Draw Background
+            ctx.clearRect(0, 0, w, h);
+            if (bgType.value === 'color') {
+                ctx.fillStyle = bgColor.value;
+                ctx.fillRect(0, 0, w, h);
+            } else if (bgType.value === 'image' && customBgImage) {
+                const scale = Math.max(w / customBgImage.width, h / customBgImage.height);
+                const sw = customBgImage.width * scale;
+                const sh = customBgImage.height * scale;
+                ctx.drawImage(customBgImage, (w - sw) / 2, (h - sh) / 2, sw, sh);
+            } else if (bgType.value === 'blur') {
+                ctx.save();
+                ctx.filter = `blur(${blurAmount.value}px)`;
+                ctx.drawImage(img, -20, -20, w + 40, h + 40);
+                ctx.restore();
             }
 
-            // Create offscreen canvas for cutout composite
-            const fgCanvas = document.createElement('canvas');
-            fgCanvas.width = w;
-            fgCanvas.height = h;
-            const fgCtx = fgCanvas.getContext('2d');
-            fgCtx.drawImage(origImg, 0, 0);
+            // 2. Draw Cutout Subject in full original resolution
+            const fg = document.createElement('canvas');
+            fg.width = w;
+            fg.height = h;
+            const fgCtx = fg.getContext('2d');
+            fgCtx.drawImage(img, 0, 0, w, h);
             fgCtx.globalCompositeOperation = 'destination-in';
-            fgCtx.drawImage(item.maskCanvas, 0, 0);
+            fgCtx.drawImage(item.maskCanvas, 0, 0, w, h);
 
-            // Step 1: Draw Background onto Main Canvas
-            canvasCtx.clearRect(0, 0, w, h);
-
-            if (currentBgMode === 'color') {
-                canvasCtx.fillStyle = currentBgColor;
-                canvasCtx.fillRect(0, 0, w, h);
-            } else if (currentBgMode === 'image' && currentBgImg) {
-                drawCoverImage(canvasCtx, currentBgImg, w, h);
-            } else if (currentBgMode === 'blur') {
-                canvasCtx.save();
-                canvasCtx.filter = `blur(${currentBlur}px)`;
-                canvasCtx.drawImage(origImg, -20, -20, w + 40, h + 40);
-                canvasCtx.restore();
-            }
-
-            // Step 2: Draw Cutout Subject
-            canvasCtx.drawImage(fgCanvas, 0, 0);
-
-            // Step 3: If in Split Comparison mode, draw before/after split
-            if (currentViewMode === 'split') {
-                const splitX = Math.round(w * splitRatio);
-                canvasCtx.save();
-                canvasCtx.beginPath();
-                canvasCtx.rect(0, 0, splitX, h);
-                canvasCtx.clip();
-                canvasCtx.drawImage(origImg, 0, 0);
-                canvasCtx.restore();
-
-                // Draw vertical divider line
-                canvasCtx.strokeStyle = '#ffffff';
-                canvasCtx.lineWidth = Math.max(3, Math.round(w / 400));
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(splitX, 0);
-                canvasCtx.lineTo(splitX, h);
-                canvasCtx.stroke();
-            }
-
-            if (currentViewMode === 'split') {
-                updateComparisonSliderPosition();
-            }
+            ctx.drawImage(fg, 0, 0);
         }
 
-        // Draw image covering the canvas (like object-fit: cover)
-        function drawCoverImage(ctx, img, cw, ch) {
-            const iw = img.naturalWidth || img.width;
-            const ih = img.naturalHeight || img.height;
-            const scale = Math.max(cw / iw, ch / ih);
-            const sw = iw * scale;
-            const sh = ih * scale;
-            const sx = (cw - sw) / 2;
-            const sy = (ch - sh) / 2;
-            ctx.drawImage(img, sx, sy, sw, sh);
-        }
-
-        // Gallery Rendering
         function renderGallery() {
             gallery.innerHTML = '';
             loadedImages.forEach((item, index) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'thumb-wrapper';
+                const wrap = document.createElement('div');
+                wrap.className = 'thumb-wrapper';
 
                 const thumb = document.createElement('img');
-                thumb.src = item.origImg.src;
+                thumb.src = item.img.src;
                 if (index === selectedIndex) thumb.classList.add('active');
 
                 thumb.addEventListener('click', () => {
                     selectedIndex = index;
-                    updateActiveThumbnail();
+                    updateActiveThumb();
                     renderCurrent();
                 });
-
-                if (item.isProcessing) {
-                    const status = document.createElement('span');
-                    status.className = 'thumb-status processing';
-                    status.textContent = 'IA...';
-                    wrapper.appendChild(status);
-                } else {
-                    const status = document.createElement('span');
-                    status.className = 'thumb-status';
-                    status.textContent = '✓';
-                    wrapper.appendChild(status);
-                }
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-thumb-btn';
                 delBtn.innerHTML = '&times;';
-                delBtn.title = 'Borrar imatge';
+                delBtn.title = 'Borrar imagen';
                 delBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     removeImage(index);
                 });
 
-                wrapper.appendChild(thumb);
-                wrapper.appendChild(delBtn);
-                gallery.appendChild(wrapper);
+                wrap.appendChild(thumb);
+                wrap.appendChild(delBtn);
+                gallery.appendChild(wrap);
             });
 
-            const hasImages = loadedImages.length > 0;
-            const hasProcessed = loadedImages.some(i => !i.isProcessing);
-            copyBtn.disabled = !hasProcessed;
-            downloadCurrentBtn.disabled = !hasProcessed;
-            downloadZipBtn.disabled = !hasProcessed;
-            deleteCurrentBtn.disabled = !hasImages;
+            const hasImg = loadedImages.length > 0;
+            const ready = loadedImages.some(i => !i.processing && i.maskCanvas);
+            copyBtn.disabled = !ready;
+            downloadSingleBtn.disabled = !ready;
+            downloadZipBtn.disabled = !ready;
+            deleteCurrentBtn.disabled = !hasImg;
         }
 
-        function updateActiveThumbnail() {
-            const wrappers = gallery.querySelectorAll('.thumb-wrapper');
-            wrappers.forEach((wrapper, idx) => {
-                const img = wrapper.querySelector('img');
+        function updateActiveThumb() {
+            gallery.querySelectorAll('.thumb-wrapper').forEach((wrap, idx) => {
+                const img = wrap.querySelector('img');
                 if (idx === selectedIndex) {
                     img.classList.add('active');
-                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 } else {
                     img.classList.remove('active');
                 }
@@ -1546,10 +719,10 @@
             loadedImages.splice(index, 1);
             if (loadedImages.length === 0) {
                 selectedIndex = -1;
-                canvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-                mainCanvas.width = 0;
-                mainCanvas.height = 0;
-                resolutionTag.textContent = 'Sense imatge seleccionada';
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.width = 0;
+                canvas.height = 0;
+                statusLabel.textContent = 'Listo para procesar';
             } else if (selectedIndex >= loadedImages.length) {
                 selectedIndex = loadedImages.length - 1;
             }
@@ -1564,121 +737,111 @@
         clearAllBtn.addEventListener('click', () => {
             loadedImages = [];
             selectedIndex = -1;
-            canvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-            mainCanvas.width = 0;
-            mainCanvas.height = 0;
-            resolutionTag.textContent = 'Sense imatge seleccionada';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.width = 0;
+            canvas.height = 0;
+            statusLabel.textContent = 'Listo para procesar';
             renderGallery();
         });
 
-        // Copy Image to Clipboard
+        // Copy button
         copyBtn.addEventListener('click', async () => {
             if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
             try {
-                // Ensure export is on full resolution canvas
-                const exportCanvas = createExportCanvas(loadedImages[selectedIndex]);
-                exportCanvas.toBlob(async (blob) => {
+                canvas.toBlob(async (blob) => {
                     if (!blob) return;
                     if (navigator.clipboard && window.ClipboardItem) {
                         const item = new ClipboardItem({ 'image/png': blob });
                         await navigator.clipboard.write([item]);
                         const orig = copyBtn.textContent;
-                        copyBtn.textContent = '¡Copiada al porta-retalls!';
+                        copyBtn.textContent = '¡Copiado!';
                         setTimeout(() => copyBtn.textContent = orig, 2000);
                     } else {
-                        alert('El teu navegador no admet copiar imatges directament.');
+                        alert('Tu navegador no soporta la copia directa de imágenes.');
                     }
                 }, 'image/png');
             } catch (err) {
                 console.error(err);
-                alert('No s\'ha pogut copiar al porta-retalls.');
+                alert('No se pudo copiar al portapapeles.');
             }
         });
 
-        // Download Current Image
-        downloadCurrentBtn.addEventListener('click', () => {
+        // Download Single Image
+        downloadSingleBtn.addEventListener('click', () => {
             if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
             const item = loadedImages[selectedIndex];
-            const mime = exportFormatSelect.value;
+            const mime = exportFormat.value;
             let ext = 'png';
             if (mime === 'image/jpeg') ext = 'jpg';
             if (mime === 'image/webp') ext = 'webp';
 
-            const exportCanvas = createExportCanvas(item);
-            const link = document.createElement('a');
             const baseName = item.name.replace(/\.[^/.]+$/, "");
-            link.download = `${baseName}_sense_fons.${ext}`;
-            link.href = exportCanvas.toDataURL(mime, 0.98);
+            const link = document.createElement('a');
+            link.download = `${baseName}_sin_fondo.${ext}`;
+            link.href = canvas.toDataURL(mime, 0.95);
             link.click();
         });
 
-        // Download All (.ZIP)
+        // Download ZIP
         downloadZipBtn.addEventListener('click', async () => {
-            const valid = loadedImages.filter(i => !i.isProcessing && i.maskCanvas);
+            const valid = loadedImages.filter(i => !i.processing && i.maskCanvas);
             if (valid.length === 0) return;
 
             const zip = new JSZip();
             downloadZipBtn.disabled = true;
-            downloadZipBtn.textContent = 'Generant ZIP...';
+            downloadZipBtn.textContent = 'Generando ZIP...';
 
-            const mime = exportFormatSelect.value;
+            const mime = exportFormat.value;
             let ext = 'png';
             if (mime === 'image/jpeg') ext = 'jpg';
             if (mime === 'image/webp') ext = 'webp';
 
             valid.forEach((item, idx) => {
-                const expCanvas = createExportCanvas(item);
-                const dataUrl = expCanvas.toDataURL(mime, 0.98);
-                const base64Data = dataUrl.split(',')[1];
+                const w = item.img.naturalWidth || item.img.width;
+                const h = item.img.naturalHeight || item.img.height;
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                const tCtx = c.getContext('2d');
+
+                if (bgType.value === 'color') {
+                    tCtx.fillStyle = bgColor.value;
+                    tCtx.fillRect(0, 0, w, h);
+                } else if (bgType.value === 'image' && customBgImage) {
+                    const scale = Math.max(w / customBgImage.width, h / customBgImage.height);
+                    tCtx.drawImage(customBgImage, (w - customBgImage.width * scale) / 2, (h - customBgImage.height * scale) / 2, customBgImage.width * scale, customBgImage.height * scale);
+                } else if (bgType.value === 'blur') {
+                    tCtx.save();
+                    tCtx.filter = `blur(${blurAmount.value}px)`;
+                    tCtx.drawImage(item.img, -20, -20, w + 40, h + 40);
+                    tCtx.restore();
+                }
+
+                const fg = document.createElement('canvas');
+                fg.width = w;
+                fg.height = h;
+                const fgCtx = fg.getContext('2d');
+                fgCtx.drawImage(item.img, 0, 0, w, h);
+                fgCtx.globalCompositeOperation = 'destination-in';
+                fgCtx.drawImage(item.maskCanvas, 0, 0, w, h);
+
+                tCtx.drawImage(fg, 0, 0);
+
+                const dataUrl = c.toDataURL(mime, 0.95);
                 const seq = String(idx + 1).padStart(3, '0');
-                const cleanName = item.name.replace(/\.[^/.]+$/, "");
-                zip.file(`${seq}_${cleanName}_nobg.${ext}`, base64Data, { base64: true });
+                const baseName = item.name.replace(/\.[^/.]+$/, "");
+                zip.file(`${seq}_${baseName}.${ext}`, dataUrl.split(',')[1], { base64: true });
             });
 
             const content = await zip.generateAsync({ type: 'blob' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(content);
-            link.download = 'imatges_sense_fons.zip';
+            link.download = 'imagenes_sin_fondo.zip';
             link.click();
 
             downloadZipBtn.disabled = false;
-            downloadZipBtn.textContent = '📦 Descarregar Totes (.ZIP)';
+            downloadZipBtn.textContent = 'Descargar Todas (.ZIP)';
         });
-
-        // Helper to produce full resolution export canvas
-        function createExportCanvas(item) {
-            const w = item.origImg.naturalWidth;
-            const h = item.origImg.naturalHeight;
-            const c = document.createElement('canvas');
-            c.width = w;
-            c.height = h;
-            const ctx = c.getContext('2d');
-
-            // 1. Background
-            if (currentBgMode === 'color') {
-                ctx.fillStyle = currentBgColor;
-                ctx.fillRect(0, 0, w, h);
-            } else if (currentBgMode === 'image' && currentBgImg) {
-                drawCoverImage(ctx, currentBgImg, w, h);
-            } else if (currentBgMode === 'blur') {
-                ctx.save();
-                ctx.filter = `blur(${currentBlur}px)`;
-                ctx.drawImage(item.origImg, -20, -20, w + 40, h + 40);
-                ctx.restore();
-            }
-
-            // 2. Cutout subject
-            const fg = document.createElement('canvas');
-            fg.width = w;
-            fg.height = h;
-            const fgCtx = fg.getContext('2d');
-            fgCtx.drawImage(item.origImg, 0, 0);
-            fgCtx.globalCompositeOperation = 'destination-in';
-            fgCtx.drawImage(item.maskCanvas, 0, 0);
-
-            ctx.drawImage(fg, 0, 0);
-            return c;
-        }
     </script>
 </body>
 </html>

@@ -3,722 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Imatges - Suite d'Eines d'Imatge</title>
-    <link rel="icon" type="image/png" href="logo.png">
+    <title>Imatges</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #fbfcfd;
-            color: #212529;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
             text-align: center;
+            color: #212529;
         }
-
-        /* Top Navigation Bar */
-        .top-nav {
-            background-color: #ffffff;
-            border-bottom: 1px solid #e5e7eb;
-            padding: 10px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: #111827;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        .nav-brand img {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 1px solid #e5e7eb;
-        }
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .nav-link {
-            text-decoration: none;
-            color: #4b5563;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 6px 14px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-        .nav-link:hover {
-            color: #111827;
-            background-color: #f3f4f6;
-        }
-        .nav-link.active {
-            color: #007bff;
-            background-color: #ebf5ff;
-            font-weight: 600;
-        }
-
-        .main-wrapper {
-            max-width: 1050px;
-            margin: 0 auto;
-            padding: 30px 20px 60px 20px;
-        }
-
-        /* Hero */
-        .hero-section {
-            margin-bottom: 35px;
-        }
-        .hero-logo {
-            width: 72px;
-            height: 72px;
-            border-radius: 18px;
-            object-fit: cover;
-            border: 2px solid #e5e7eb;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            margin-bottom: 15px;
-        }
-        .hero-title {
-            font-size: 34px;
-            margin: 0 0 8px 0;
-            color: #111827;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-        .hero-subtitle {
-            font-size: 17px;
-            color: #4b5563;
-            max-width: 650px;
-            margin: 0 auto 12px auto;
-            line-height: 1.5;
-        }
-        .hero-tag {
-            display: inline-block;
-            background: #e0f2fe;
-            color: #0284c7;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 999px;
-            margin-top: 5px;
-        }
-
-        /* Hub Grid */
-        .hub-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-            gap: 24px;
-            margin-top: 20px;
-            text-align: left;
-        }
-
-        .tool-card {
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .tool-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 20px -3px rgba(0,0,0,0.08);
-            border-color: #cbd5e1;
-        }
-
-        .tool-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-        .tool-title-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .tool-icon {
-            font-size: 26px;
-        }
-        .tool-title {
-            margin: 0;
-            font-size: 20px;
-            color: #111827;
-            font-weight: 700;
-        }
-        .badge {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 999px;
-            text-transform: uppercase;
-        }
-        .badge-green {
-            background-color: #dcfce7;
-            color: #15803d;
-        }
-        .badge-blue {
-            background-color: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .tool-desc {
-            font-size: 14px;
-            color: #4b5563;
-            line-height: 1.5;
-            margin: 0 0 16px 0;
-        }
-
-        /* Interactive Live Preview Box */
-        .preview-box {
-            background: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            height: 200px;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 18px;
+        .header {
             display: flex;
             align-items: center;
             justify-content: center;
-            user-select: none;
+            gap: 14px;
+            margin-bottom: 30px;
         }
-
-        /* Watermark interactive preview */
-        .wm-preview-canvas {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 6px;
+        .header img {
+            height: 48px;
+            border-radius: 8px;
         }
-        .wm-interactive-bar {
-            position: absolute;
-            bottom: 8px;
-            left: 8px;
-            right: 8px;
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(4px);
-            padding: 6px 10px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 12px;
-            gap: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-        .wm-interactive-bar input[type="range"] {
-            flex: 1;
+        .header h1 {
             margin: 0;
+            font-size: 32px;
         }
-
-        /* Remove BG interactive split slider */
-        .split-preview-wrap {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-image: 
-                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
-                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
-                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
-            background-size: 16px 16px;
-            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-            background-color: #ffffff;
-            cursor: ew-resize;
-        }
-        .split-img-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .split-cutout-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            clip-path: inset(0 0 0 50%);
-        }
-        .split-divider {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 50%;
-            width: 2px;
-            background: #ffffff;
-            box-shadow: 0 0 6px rgba(0,0,0,0.5);
-            pointer-events: none;
-        }
-        .split-badge-before {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            background: rgba(0,0,0,0.65);
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .split-badge-after {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: #007bff;
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .split-handle-hint {
-            position: absolute;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255,255,255,0.9);
-            color: #111827;
-            padding: 3px 10px;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 600;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            pointer-events: none;
-        }
-
-        /* Feature points list */
-        .feature-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 20px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .feature-item {
-            font-size: 13px;
-            color: #374151;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .feature-item span.icon {
-            color: #10b981;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        /* Launch Buttons */
-        .btn-launch {
-            display: block;
-            text-align: center;
-            padding: 12px 18px;
-            border-radius: 6px;
-            text-decoration: none;
-            font-size: 15px;
-            font-weight: 600;
-            transition: all 0.15s ease;
-        }
-        .btn-launch-green {
-            background-color: #28a745;
-            color: #ffffff;
-        }
-        .btn-launch-green:hover {
-            background-color: #218838;
-        }
-        .btn-launch-blue {
-            background-color: #007bff;
-            color: #ffffff;
-        }
-        .btn-launch-blue:hover {
-            background-color: #0069d9;
-        }
-
-        /* Value props row */
-        .trust-banner {
-            margin-top: 45px;
-            background: #f8f9fa;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 20px;
+        .hub-container {
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-around;
             gap: 20px;
-            text-align: center;
+            justify-content: center;
+            align-items: stretch;
         }
-        .trust-item {
+        .hub-card {
             flex: 1;
-            min-width: 220px;
+            min-width: 300px;
+            max-width: 420px;
+            background: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .trust-item h4 {
-            margin: 0 0 4px 0;
+        .hub-card h2 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 20px;
+        }
+        .hub-card p {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 15px;
+        }
+        .preview-box {
+            background: #ffffff;
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        .checker-bg {
+            background-image: 
+                linear-gradient(45deg, #e9ecef 25%, transparent 25%), 
+                linear-gradient(-45deg, #e9ecef 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e9ecef 75%), 
+                linear-gradient(-45deg, transparent 75%, #e9ecef 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+        .hub-btn {
+            display: block;
+            padding: 10px;
             font-size: 15px;
-            color: #111827;
-        }
-        .trust-item p {
-            margin: 0;
-            font-size: 13px;
-            color: #6b7280;
-        }
-
-        /* Footer */
-        footer {
-            margin-top: 40px;
-            font-size: 13px;
-            color: #9ca3af;
-        }
-        footer a {
-            color: #6b7280;
             text-decoration: none;
+            background-color: #28a745;
+            color: white;
+            border-radius: 5px;
+            font-weight: bold;
         }
-        footer a:hover {
-            text-decoration: underline;
+        .hub-btn:hover {
+            background-color: #218838;
         }
     </style>
 </head>
 <body>
 
-    <!-- Navigation Header -->
-    <header class="top-nav">
-        <a href="index.html" class="nav-brand">
-            <img src="logo.png" alt="Logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%23007bff\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg>'">
-            <span>Imatges</span>
-        </a>
-        <nav class="nav-links">
-            <a href="index.html" class="nav-link active">🏠 Hub</a>
-            <a href="marca-de-agua.html" class="nav-link">💧 Marca d'Aigua</a>
-            <a href="quitar-fondo.html" class="nav-link">🪄 Quitar Fondo</a>
-        </nav>
-    </header>
-
-    <div class="main-wrapper">
-        <!-- Hero Header -->
-        <section class="hero-section">
-            <img src="logo.png" alt="Logo" class="hero-logo" onerror="this.style.display='none'">
-            <h1 class="hero-title">Imatges</h1>
-            <p class="hero-subtitle">
-                Suite d'eines professionals per a la manipulació d'imatges sense pèrdua de qualitat.
-                Gratuïta, il·limitada i 100% privada al teu navegador.
-            </p>
-            <span class="hero-tag">✨ Alternativa lliure a Remove.bg &amp; Watermark en Lote</span>
-        </section>
-
-        <!-- Hub Cards Grid -->
-        <div class="hub-grid">
-
-            <!-- Card 1: Marca d'Aigua -->
-            <div class="tool-card">
-                <div>
-                    <div class="tool-header">
-                        <div class="tool-title-group">
-                            <span class="tool-icon">💧</span>
-                            <h2 class="tool-title">Marca d'Aigua</h2>
-                        </div>
-                        <span class="badge badge-green">Lote Masivo</span>
-                    </div>
-
-                    <p class="tool-desc">
-                        Protegeix el teu contingut afegint signatures, copyright o textos personalitzats a desenes d'imatges a la vegada.
-                    </p>
-
-                    <!-- Interactive Live Preview Box -->
-                    <div class="preview-box">
-                        <canvas id="hubWmCanvas" class="wm-preview-canvas" width="340" height="190"></canvas>
-                        <div class="wm-interactive-bar">
-                            <span>Opacitat:</span>
-                            <input type="range" id="hubWmOpacity" min="0.1" max="1" step="0.05" value="0.6">
-                            <button type="button" id="hubWmModeBtn" style="padding:3px 8px; font-size:11px; background:#007bff; border-radius:4px;">
-                                Mosaico
-                            </button>
-                        </div>
-                    </div>
-
-                    <ul class="feature-list">
-                        <li class="feature-item">
-                            <span class="icon">✓</span>
-                            <span><strong>Processament en lot:</strong> Aplica a 1 o 100 fotos alhora.</span>
-                        </li>
-                        <li class="feature-item">
-                            <span class="icon">✓</span>
-                            <span><strong>Patró Mosaico 360°</strong> o cantonades amb rotació lliure.</span>
-                        </li>
-                        <li class="feature-item">
-                            <span class="icon">✓</span>
-                            <span><strong>Porta-retalls instantani (Ctrl+V)</strong> i descàrrega en .ZIP.</span>
-                        </li>
-                        <li class="feature-item">
-                            <span class="icon">✓</span>
-                            <span>Memòria local automàtica per guardar la teva marca.</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <a href="marca-de-agua.html" class="btn-launch btn-launch-green">
-                    Obrir Marca d'Aigua →
-                </a>
-            </div>
-
-            <!-- Card 2: Quitar Fondo (Remove BG) -->
-            <div class="tool-card">
-                <div>
-                    <div class="tool-header">
-                        <div class="tool-title-group">
-                            <span class="tool-icon">🪄</span>
-                            <h2 class="tool-title">Quitar Fondo (Treure Fons)</h2>
-                        </div>
-                        <span class="badge badge-blue">IA Sense Pèrdua</span>
-                    </div>
-
-                    <p class="tool-desc">
-                        Alternativa completa a Remove.bg. Elimina el fons automàticament amb IA conservant el 100% de la resolució original.
-                    </p>
-
-                    <!-- Interactive Live Split Preview Box -->
-                    <div class="preview-box">
-                        <div class="split-preview-wrap" id="hubSplitWrap">
-                            <!-- Background Base Canvas -->
-                            <canvas id="hubBgBaseCanvas" class="split-img-layer" width="340" height="200"></canvas>
-                            <!-- Cutout Foreground Layer -->
-                            <canvas id="hubCutoutCanvas" class="split-cutout-layer" width="340" height="200"></canvas>
-                            <div class="split-divider" id="hubSplitDivider"></div>
-                            <span class="split-badge-before">Original</span>
-                            <span class="split-badge-after">Sense Fons</span>
-                            <span class="split-handle-hint">↔ Arrossega per comparar</span>
-                        </div>
-                    </div>
-
-                    <ul class="feature-list">
-                        <li class="feature-item">
-                            <span class="icon">✓</span>
-                            <span><strong>Sense pèrdua de qualitat:</strong> Manté la resolució 4K/HD original.</span>
-                        </li>
-                        <li class="feature-item">
-                            <span class="icon">✓</span>
-                            <span><strong>Substitució de fons:</strong> Colors sòlids, paletes d'estudi i fotos.</span>
-                        </li>
-                        <li class="feature-item">
-                            <span class="icon">✓</span>
-                            <span><strong>Efecte Desenfocament (Bokeh)</strong> per a estil retrat professional.</span>
-                        </li>
-                        <li class="feature-item">
-                            <span class="icon">✓</span>
-                            <span><strong>Pinzell manual:</strong> Esborra o recupera detalls de cabell o vores.</span>
-                        </li>
-                    </ul>
-                </div>
-
-                <a href="quitar-fondo.html" class="btn-launch btn-launch-blue">
-                    Obrir Quitar Fondo →
-                </a>
-            </div>
-
-        </div>
-
-        <!-- Trust / Benefits Row -->
-        <section class="trust-banner">
-            <div class="trust-item">
-                <h4>🔒 100% Privat i Local</h4>
-                <p>Totes les fotos es processen a la teva memòria RAM. Cap fitxer s'envia a servidors externs.</p>
-            </div>
-            <div class="trust-item">
-                <h4>⚡ Il·limitat i Gratuït</h4>
-                <p>Sense crèdits, sense comptes i sense marques d'aigua imposades.</p>
-            </div>
-            <div class="trust-item">
-                <h4>💎 Màxima Resolució</h4>
-                <p>A diferència d'altres eines que redueixen a 0.25 MP, aquí conserves cada píxel original.</p>
-            </div>
-        </section>
-
-        <footer>
-            <p>
-                <strong>Imatges</strong> • Desenvolupat per <a href="https://github.com/voiceless819" target="_blank">voiceless819</a>
-            </p>
-        </footer>
+    <div class="header">
+        <img src="logo.png" alt="Logo">
+        <h1>Imatges</h1>
     </div>
 
-    <!-- Live Preview Interactive Scripts -->
+    <div class="hub-container">
+        <!-- Card 1: Marca de Agua -->
+        <div class="hub-card">
+            <div>
+                <h2>Marca d'Aigua</h2>
+                <p>Añade texto o marcas de agua en lote a tus imágenes.</p>
+                <div class="preview-box">
+                    <canvas id="wmPreview" width="300" height="180"></canvas>
+                </div>
+            </div>
+            <a href="marca-de-agua.html" class="hub-btn">Abrir</a>
+        </div>
+
+        <!-- Card 2: Quitar Fondo -->
+        <div class="hub-card">
+            <div>
+                <h2>Quitar Fondo</h2>
+                <p>Quita el fondo a tus imágenes manteniendo la resolución original.</p>
+                <div class="preview-box checker-bg">
+                    <canvas id="bgPreview" width="300" height="180"></canvas>
+                </div>
+            </div>
+            <a href="quitar-fondo.html" class="hub-btn">Abrir</a>
+        </div>
+    </div>
+
     <script>
-        // --- 1. Watermark Live Preview Card ---
-        const wmCanvas = document.getElementById('hubWmCanvas');
+        // Preview 1: Marca de Agua
+        const wmCanvas = document.getElementById('wmPreview');
         const wmCtx = wmCanvas.getContext('2d');
-        const wmOpacityInput = document.getElementById('hubWmOpacity');
-        const wmModeBtn = document.getElementById('hubWmModeBtn');
-        let isTileMode = false;
+        const w = wmCanvas.width;
+        const h = wmCanvas.height;
 
-        function renderWmHubPreview() {
-            const w = wmCanvas.width;
-            const h = wmCanvas.height;
+        // Draw sample photo background
+        const grad = wmCtx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#3a7bd5');
+        grad.addColorStop(1, '#3a6073');
+        wmCtx.fillStyle = grad;
+        wmCtx.fillRect(0, 0, w, h);
 
-            // Draw demo photo background (modern gradient scenery)
-            const grad = wmCtx.createLinearGradient(0, 0, w, h);
-            grad.addColorStop(0, '#1e293b');
-            grad.addColorStop(0.5, '#3b82f6');
-            grad.addColorStop(1, '#93c5fd');
-            wmCtx.fillStyle = grad;
-            wmCtx.fillRect(0, 0, w, h);
+        // Mountain shape
+        wmCtx.fillStyle = '#2c3e50';
+        wmCtx.beginPath();
+        wmCtx.moveTo(0, h);
+        wmCtx.lineTo(w * 0.4, h * 0.45);
+        wmCtx.lineTo(w * 0.7, h);
+        wmCtx.fill();
 
-            // Scenery mountain shapes
-            wmCtx.fillStyle = '#0f172a';
-            wmCtx.beginPath();
-            wmCtx.moveTo(0, h);
-            wmCtx.lineTo(w * 0.35, h * 0.4);
-            wmCtx.lineTo(w * 0.7, h);
-            wmCtx.fill();
+        // Watermark text
+        wmCtx.save();
+        wmCtx.font = 'bold 22px Arial, sans-serif';
+        wmCtx.fillStyle = '#ffffff';
+        wmCtx.globalAlpha = 0.55;
+        wmCtx.textAlign = 'center';
+        wmCtx.textBaseline = 'middle';
+        wmCtx.translate(w / 2, h / 2);
+        wmCtx.rotate(-0.15);
+        wmCtx.fillText('© Mi Marca', 0, 0);
+        wmCtx.restore();
 
-            wmCtx.fillStyle = '#1e3a8a';
-            wmCtx.beginPath();
-            wmCtx.moveTo(w * 0.4, h);
-            wmCtx.lineTo(w * 0.75, h * 0.48);
-            wmCtx.lineTo(w, h);
-            wmCtx.fill();
+        // Preview 2: Quitar Fondo (Transparent cutout)
+        const bgCanvas = document.getElementById('bgPreview');
+        const bgCtx = bgCanvas.getContext('2d');
+        bgCtx.clearRect(0, 0, w, h);
 
-            // Watermark text
-            const text = '© Mi Marca';
-            const opacity = parseFloat(wmOpacityInput.value);
-
-            wmCtx.save();
-            wmCtx.font = 'bold 20px Arial, sans-serif';
-            wmCtx.fillStyle = '#ffffff';
-            wmCtx.globalAlpha = opacity;
-            wmCtx.textAlign = 'center';
-            wmCtx.textBaseline = 'middle';
-
-            if (isTileMode) {
-                for (let y = 25; y < h + 25; y += 45) {
-                    for (let x = 40; x < w + 40; x += 110) {
-                        wmCtx.save();
-                        wmCtx.translate(x, y);
-                        wmCtx.rotate(-0.35);
-                        wmCtx.fillText(text, 0, 0);
-                        wmCtx.restore();
-                    }
-                }
-            } else {
-                wmCtx.save();
-                wmCtx.translate(w / 2, h / 2);
-                wmCtx.rotate(-0.15);
-                wmCtx.fillText(text, 0, 0);
-                wmCtx.restore();
-            }
-            wmCtx.restore();
-        }
-
-        wmOpacityInput.addEventListener('input', renderWmHubPreview);
-        wmModeBtn.addEventListener('click', () => {
-            isTileMode = !isTileMode;
-            wmModeBtn.textContent = isTileMode ? 'Centre' : 'Mosaico';
-            renderWmHubPreview();
-        });
-        renderWmHubPreview();
-
-        // --- 2. Remove BG Split Slider Live Preview Card ---
-        const splitWrap = document.getElementById('hubSplitWrap');
-        const bgBaseCanvas = document.getElementById('hubBgBaseCanvas');
-        const cutoutCanvas = document.getElementById('hubCutoutCanvas');
-        const splitDivider = document.getElementById('hubSplitDivider');
-
-        function initSplitPreview() {
-            const w = bgBaseCanvas.width;
-            const h = bgBaseCanvas.height;
-
-            const bCtx = bgBaseCanvas.getContext('2d');
-            const cCtx = cutoutCanvas.getContext('2d');
-
-            // 1. Draw Full Scene on bgBaseCanvas (Person silhouette with colorful sunset background)
-            const bgGrad = bCtx.createLinearGradient(0, 0, w, h);
-            bgGrad.addColorStop(0, '#f97316');
-            bgGrad.addColorStop(0.5, '#ec4899');
-            bgGrad.addColorStop(1, '#8b5cf6');
-            bCtx.fillStyle = bgGrad;
-            bCtx.fillRect(0, 0, w, h);
-
-            // Sun
-            bCtx.fillStyle = '#fef08a';
-            bCtx.beginPath();
-            bCtx.arc(w * 0.7, h * 0.35, 36, 0, Math.PI * 2);
-            bCtx.fill();
-
-            // Draw subject on bgBaseCanvas
-            drawSubject(bCtx, w, h);
-
-            // 2. Draw ONLY Subject on cutoutCanvas (transparent background)
-            cCtx.clearRect(0, 0, w, h);
-            drawSubject(cCtx, w, h);
-        }
-
-        function drawSubject(ctx, w, h) {
-            ctx.save();
-            ctx.fillStyle = '#1e1b4b'; // sharp character silhouette
-            // Head
-            ctx.beginPath();
-            ctx.arc(w * 0.45, h * 0.42, 34, 0, Math.PI * 2);
-            ctx.fill();
-            // Shoulders & Body
-            ctx.beginPath();
-            ctx.moveTo(w * 0.45 - 55, h);
-            ctx.quadraticCurveTo(w * 0.45 - 45, h * 0.65, w * 0.45 - 28, h * 0.62);
-            ctx.lineTo(w * 0.45 + 28, h * 0.62);
-            ctx.quadraticCurveTo(w * 0.45 + 45, h * 0.65, w * 0.45 + 55, h);
-            ctx.closePath();
-            ctx.fill();
-            // Camera / Accessory in hands
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(w * 0.45 - 18, h * 0.68, 36, 24);
-            ctx.fillStyle = '#38bdf8';
-            ctx.beginPath();
-            ctx.arc(w * 0.45, h * 0.8, 8, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-
-        let isSplitDragging = false;
-        function updateSplit(clientX) {
-            const rect = splitWrap.getBoundingClientRect();
-            let pos = (clientX - rect.left) / rect.width;
-            pos = Math.max(0.05, Math.min(0.95, pos));
-            const percentage = pos * 100;
-            cutoutCanvas.style.clipPath = `inset(0 0 0 ${percentage}%)`;
-            splitDivider.style.left = `${percentage}%`;
-        }
-
-        splitWrap.addEventListener('mousedown', (e) => {
-            isSplitDragging = true;
-            updateSplit(e.clientX);
-        });
-        window.addEventListener('mouseup', () => isSplitDragging = false);
-        window.addEventListener('mousemove', (e) => {
-            if (isSplitDragging) updateSplit(e.clientX);
-        });
-        // Touch support for mobile
-        splitWrap.addEventListener('touchmove', (e) => {
-            if (e.touches.length > 0) updateSplit(e.touches[0].clientX);
-        });
-
-        initSplitPreview();
+        // Draw a clean silhouette subject cut out on transparency
+        bgCtx.fillStyle = '#343a40';
+        // Head
+        bgCtx.beginPath();
+        bgCtx.arc(w / 2, h * 0.35, 32, 0, Math.PI * 2);
+        bgCtx.fill();
+        // Body / Shoulders
+        bgCtx.beginPath();
+        bgCtx.moveTo(w / 2 - 50, h);
+        bgCtx.quadraticCurveTo(w / 2 - 40, h * 0.58, w / 2 - 25, h * 0.55);
+        bgCtx.lineTo(w / 2 + 25, h * 0.55);
+        bgCtx.quadraticCurveTo(w / 2 + 40, h * 0.58, w / 2 + 50, h);
+        bgCtx.closePath();
+        bgCtx.fill();
     </script>
 </body>
 </html>
