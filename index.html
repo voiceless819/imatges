@@ -3,681 +3,722 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marca de Agua en Lote Completa</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <title>Imatges - Suite d'Eines d'Imatge</title>
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
-            max-width: 1000px;
-            margin: 20px auto;
-            padding: 0 20px;
+            margin: 0;
+            padding: 0;
+            background-color: #fbfcfd;
+            color: #212529;
             text-align: center;
         }
-        .paste-notice {
-            background-color: #e9ecef;
-            border: 2px dashed #6c757d;
-            padding: 10px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            font-size: 14px;
-            color: #495057;
+
+        /* Top Navigation Bar */
+        .top-nav {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .container {
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #111827;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .nav-brand img {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #e5e7eb;
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-link {
+            text-decoration: none;
+            color: #4b5563;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover {
+            color: #111827;
+            background-color: #f3f4f6;
+        }
+        .nav-link.active {
+            color: #007bff;
+            background-color: #ebf5ff;
+            font-weight: 600;
+        }
+
+        .main-wrapper {
+            max-width: 1050px;
+            margin: 0 auto;
+            padding: 30px 20px 60px 20px;
+        }
+
+        /* Hero */
+        .hero-section {
+            margin-bottom: 35px;
+        }
+        .hero-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            object-fit: cover;
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 15px;
+        }
+        .hero-title {
+            font-size: 34px;
+            margin: 0 0 8px 0;
+            color: #111827;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .hero-subtitle {
+            font-size: 17px;
+            color: #4b5563;
+            max-width: 650px;
+            margin: 0 auto 12px auto;
+            line-height: 1.5;
+        }
+        .hero-tag {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0284c7;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-top: 5px;
+        }
+
+        /* Hub Grid */
+        .hub-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 24px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .tool-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 20px -3px rgba(0,0,0,0.08);
+            border-color: #cbd5e1;
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .tool-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .tool-icon {
+            font-size: 26px;
+        }
+        .tool-title {
+            margin: 0;
+            font-size: 20px;
+            color: #111827;
+            font-weight: 700;
+        }
+        .badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+        .badge-green {
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+        .badge-blue {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .tool-desc {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.5;
+            margin: 0 0 16px 0;
+        }
+
+        /* Interactive Live Preview Box */
+        .preview-box {
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        /* Watermark interactive preview */
+        .wm-preview-canvas {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 6px;
+        }
+        .wm-interactive-bar {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(4px);
+            padding: 6px 10px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            gap: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .wm-interactive-bar input[type="range"] {
+            flex: 1;
+            margin: 0;
+        }
+
+        /* Remove BG interactive split slider */
+        .split-preview-wrap {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            background-color: #ffffff;
+            cursor: ew-resize;
+        }
+        .split-img-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .split-cutout-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            clip-path: inset(0 0 0 50%);
+        }
+        .split-divider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            background: #ffffff;
+            box-shadow: 0 0 6px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        .split-badge-before {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(0,0,0,0.65);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .split-badge-after {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #007bff;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .split-handle-hint {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            color: #111827;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            pointer-events: none;
+        }
+
+        /* Feature points list */
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .feature-item {
+            font-size: 13px;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .feature-item span.icon {
+            color: #10b981;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Launch Buttons */
+        .btn-launch {
+            display: block;
+            text-align: center;
+            padding: 12px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+        .btn-launch-green {
+            background-color: #28a745;
+            color: #ffffff;
+        }
+        .btn-launch-green:hover {
+            background-color: #218838;
+        }
+        .btn-launch-blue {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+        .btn-launch-blue:hover {
+            background-color: #0069d9;
+        }
+
+        /* Value props row */
+        .trust-banner {
+            margin-top: 45px;
+            background: #f8f9fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px;
             display: flex;
             flex-wrap: wrap;
+            justify-content: space-around;
             gap: 20px;
-            justify-content: center;
-            align-items: flex-start;
+            text-align: center;
         }
-        .controls {
+        .trust-item {
             flex: 1;
-            min-width: 290px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            text-align: left;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
+            min-width: 220px;
         }
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .quick-btn-group {
-            display: flex;
-            gap: 5px;
-            margin-top: 4px;
-        }
-        .quick-btn-group button {
-            padding: 2px 6px;
-            font-size: 12px;
-            background-color: #6c757d;
-        }
-        .hidden {
-            display: none !important;
-        }
-        .preview-area {
-            flex: 2;
-            min-width: 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        canvas {
-            border: 2px dashed #ccc;
-            max-width: 100%;
-            height: auto;
-        }
-        .gallery {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding: 10px 0;
-            min-height: 90px;
-            align-items: center;
-        }
-        .thumb-wrapper {
-            position: relative;
-            display: inline-block;
-            flex-shrink: 0;
-        }
-        .gallery img {
-            height: 70px;
-            border: 2px solid transparent;
-            border-radius: 4px;
-            cursor: pointer;
-            object-fit: cover;
-            display: block;
-        }
-        .gallery img.active {
-            border-color: #007bff;
-        }
-        .delete-thumb-btn {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            line-height: 18px;
-            cursor: pointer;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            box-shadow: 0px 2px 4px rgba(0,0,0,0.3);
-        }
-        .delete-thumb-btn:hover {
-            background-color: #bd2130;
-        }
-        .delete-current-btn {
-            background-color: #dc3545;
-            margin-top: 5px;
-        }
-        .delete-current-btn:hover {
-            background-color: #bd2130;
-        }
-        .clear-all-btn {
-            background-color: #6c757d;
-            margin-top: 5px;
-        }
-        .clear-all-btn:hover {
-            background-color: #5a6268;
-        }
-        button {
-            padding: 10px;
+        .trust-item h4 {
+            margin: 0 0 4px 0;
             font-size: 15px;
-            cursor: pointer;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 5px;
+            color: #111827;
         }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
+        .trust-item p {
+            margin: 0;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 40px;
+            font-size: 13px;
+            color: #9ca3af;
+        }
+        footer a {
+            color: #6b7280;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
-    <h1>Marca de Agua en Lote</h1>
-    <div class="paste-notice">
-        📌 <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) para pegar imágenes desde el portapapeles.
-    </div>
+    <!-- Navigation Header -->
+    <header class="top-nav">
+        <a href="index.html" class="nav-brand">
+            <img src="logo.png" alt="Logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'32\' height=\'32\' viewBox=\'0 0 24 24\' fill=\'%23007bff\'><path d=\'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z\'/></svg>'">
+            <span>Imatges</span>
+        </a>
+        <nav class="nav-links">
+            <a href="index.html" class="nav-link active">🏠 Hub</a>
+            <a href="marca-de-agua.html" class="nav-link">💧 Marca d'Aigua</a>
+            <a href="quitar-fondo.html" class="nav-link">🪄 Quitar Fondo</a>
+        </nav>
+    </header>
 
-    <div class="container">
-        <div class="controls">
-            <div class="control-group">
-                <label for="imgInput">Seleccionar Imágenes:</label>
-                <input type="file" id="imgInput" accept="image/*" multiple>
-            </div>
+    <div class="main-wrapper">
+        <!-- Hero Header -->
+        <section class="hero-section">
+            <img src="logo.png" alt="Logo" class="hero-logo" onerror="this.style.display='none'">
+            <h1 class="hero-title">Imatges</h1>
+            <p class="hero-subtitle">
+                Suite d'eines professionals per a la manipulació d'imatges sense pèrdua de qualitat.
+                Gratuïta, il·limitada i 100% privada al teu navegador.
+            </p>
+            <span class="hero-tag">✨ Alternativa lliure a Remove.bg &amp; Watermark en Lote</span>
+        </section>
 
-            <div class="control-group">
-                <label for="textInput">Texto Base:</label>
-                <input type="text" id="textInput" value="© Mi Marca">
-            </div>
+        <!-- Hub Cards Grid -->
+        <div class="hub-grid">
 
-            <div class="control-group">
-                <label for="fontFamily">Fuente de Letra:</label>
-                <select id="fontFamily">
-                    <option value="Arial, sans-serif">Arial</option>
-                    <option value="Verdana, sans-serif">Verdana</option>
-                    <option value="'Times New Roman', serif">Times New Roman</option>
-                    <option value="'Courier New', monospace">Courier New</option>
-                    <option value="Georgia, serif">Georgia</option>
-                    <option value="Impact, sans-serif">Impact</option>
-                    <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
-                    <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-                </select>
-            </div>
+            <!-- Card 1: Marca d'Aigua -->
+            <div class="tool-card">
+                <div>
+                    <div class="tool-header">
+                        <div class="tool-title-group">
+                            <span class="tool-icon">💧</span>
+                            <h2 class="tool-title">Marca d'Aigua</h2>
+                        </div>
+                        <span class="badge badge-green">Lote Masivo</span>
+                    </div>
 
-            <div class="control-group">
-                <label for="position">Ubicación de la Marca:</label>
-                <select id="position">
-                    <option value="center">Centro</option>
-                    <option value="tile">Mosaico (Repetida / Patrón)</option>
-                    <optgroup label="Esquinas">
-                        <option value="top-left">Arriba a la izquierda</option>
-                        <option value="top-right">Arriba a la derecha</option>
-                        <option value="bottom-left">Abajo a la izquierda</option>
-                        <option value="bottom-right">Abajo a la derecha</option>
-                    </optgroup>
-                    <optgroup label="Bordes Centrales">
-                        <option value="top-center">Arriba al centro</option>
-                        <option value="bottom-center">Abajo al centro</option>
-                        <option value="middle-left">Centro a la izquierda</option>
-                        <option value="middle-right">Centro a la derecha</option>
-                    </optgroup>
-                </select>
-            </div>
+                    <p class="tool-desc">
+                        Protegeix el teu contingut afegint signatures, copyright o textos personalitzats a desenes d'imatges a la vegada.
+                    </p>
 
-            <div class="control-group hidden" id="tileDensityGroup">
-                <label for="tileSpacing">Separación de Mosaico (menor = más denso):</label>
-                <input type="range" id="tileSpacing" min="10" max="300" value="80">
-            </div>
+                    <!-- Interactive Live Preview Box -->
+                    <div class="preview-box">
+                        <canvas id="hubWmCanvas" class="wm-preview-canvas" width="340" height="190"></canvas>
+                        <div class="wm-interactive-bar">
+                            <span>Opacitat:</span>
+                            <input type="range" id="hubWmOpacity" min="0.1" max="1" step="0.05" value="0.6">
+                            <button type="button" id="hubWmModeBtn" style="padding:3px 8px; font-size:11px; background:#007bff; border-radius:4px;">
+                                Mosaico
+                            </button>
+                        </div>
+                    </div>
 
-            <div class="control-group">
-                <label for="rotation">Rotación: <strong id="rotationVal">0°</strong></label>
-                <input type="range" id="rotation" min="-180" max="180" value="0">
-                <div class="quick-btn-group">
-                    <button type="button" onclick="setRotation(-90)">-90°</button>
-                    <button type="button" onclick="setRotation(-45)">-45°</button>
-                    <button type="button" onclick="setRotation(0)">0° (Horizontal)</button>
-                    <button type="button" onclick="setRotation(45)">45°</button>
-                    <button type="button" onclick="setRotation(90)">90°</button>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="icon">✓</span>
+                            <span><strong>Processament en lot:</strong> Aplica a 1 o 100 fotos alhora.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="icon">✓</span>
+                            <span><strong>Patró Mosaico 360°</strong> o cantonades amb rotació lliure.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="icon">✓</span>
+                            <span><strong>Porta-retalls instantani (Ctrl+V)</strong> i descàrrega en .ZIP.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="icon">✓</span>
+                            <span>Memòria local automàtica per guardar la teva marca.</span>
+                        </li>
+                    </ul>
                 </div>
+
+                <a href="marca-de-agua.html" class="btn-launch btn-launch-green">
+                    Obrir Marca d'Aigua →
+                </a>
             </div>
 
-            <div class="control-group">
-                <label for="fontSize">Tamaño del Texto (px):</label>
-                <input type="range" id="fontSize" min="10" max="200" value="48">
+            <!-- Card 2: Quitar Fondo (Remove BG) -->
+            <div class="tool-card">
+                <div>
+                    <div class="tool-header">
+                        <div class="tool-title-group">
+                            <span class="tool-icon">🪄</span>
+                            <h2 class="tool-title">Quitar Fondo (Treure Fons)</h2>
+                        </div>
+                        <span class="badge badge-blue">IA Sense Pèrdua</span>
+                    </div>
+
+                    <p class="tool-desc">
+                        Alternativa completa a Remove.bg. Elimina el fons automàticament amb IA conservant el 100% de la resolució original.
+                    </p>
+
+                    <!-- Interactive Live Split Preview Box -->
+                    <div class="preview-box">
+                        <div class="split-preview-wrap" id="hubSplitWrap">
+                            <!-- Background Base Canvas -->
+                            <canvas id="hubBgBaseCanvas" class="split-img-layer" width="340" height="200"></canvas>
+                            <!-- Cutout Foreground Layer -->
+                            <canvas id="hubCutoutCanvas" class="split-cutout-layer" width="340" height="200"></canvas>
+                            <div class="split-divider" id="hubSplitDivider"></div>
+                            <span class="split-badge-before">Original</span>
+                            <span class="split-badge-after">Sense Fons</span>
+                            <span class="split-handle-hint">↔ Arrossega per comparar</span>
+                        </div>
+                    </div>
+
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="icon">✓</span>
+                            <span><strong>Sense pèrdua de qualitat:</strong> Manté la resolució 4K/HD original.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="icon">✓</span>
+                            <span><strong>Substitució de fons:</strong> Colors sòlids, paletes d'estudi i fotos.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="icon">✓</span>
+                            <span><strong>Efecte Desenfocament (Bokeh)</strong> per a estil retrat professional.</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="icon">✓</span>
+                            <span><strong>Pinzell manual:</strong> Esborra o recupera detalls de cabell o vores.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <a href="quitar-fondo.html" class="btn-launch btn-launch-blue">
+                    Obrir Quitar Fondo →
+                </a>
             </div>
 
-            <div class="control-group">
-                <label for="textColor">Color del Texto:</label>
-                <input type="color" id="textColor" value="#ffffff">
-            </div>
-
-            <div class="control-group">
-                <label for="opacity">Opacidad:</label>
-                <input type="range" id="opacity" min="0.05" max="1" step="0.05" value="0.5">
-            </div>
-
-            
-            <div class="control-group">
-                <label for="exportFormat">Formato de Descarga:</label>
-                <select id="exportFormat">
-                    <option value="image/png">PNG (.png)</option>
-                    <option value="image/jpeg">JPEG (.jpg)</option>
-                    <option value="image/webp">WEBP (.webp)</option>
-                </select>
-            </div>
-
-            <button id="copyBtn" disabled style="background-color: #007bff; margin-bottom: 5px;">Copiar al Portapapeles</button>
-            <button id="downloadZipBtn" disabled>Descargar Todas (.ZIP)</button>
-
-            <button id="clearAllBtn" class="clear-all-btn">Limpiar Todo</button>
         </div>
 
-        <div class="preview-area">
-            <div class="gallery" id="gallery"></div>
-            <canvas id="canvas"></canvas>
-            <button id="deleteCurrentBtn" class="delete-current-btn" disabled>Borrar Imagen Seleccionada</button>
-        </div>
+        <!-- Trust / Benefits Row -->
+        <section class="trust-banner">
+            <div class="trust-item">
+                <h4>🔒 100% Privat i Local</h4>
+                <p>Totes les fotos es processen a la teva memòria RAM. Cap fitxer s'envia a servidors externs.</p>
+            </div>
+            <div class="trust-item">
+                <h4>⚡ Il·limitat i Gratuït</h4>
+                <p>Sense crèdits, sense comptes i sense marques d'aigua imposades.</p>
+            </div>
+            <div class="trust-item">
+                <h4>💎 Màxima Resolució</h4>
+                <p>A diferència d'altres eines que redueixen a 0.25 MP, aquí conserves cada píxel original.</p>
+            </div>
+        </section>
+
+        <footer>
+            <p>
+                <strong>Imatges</strong> • Desenvolupat per <a href="https://github.com/voiceless819" target="_blank">voiceless819</a>
+            </p>
+        </footer>
     </div>
 
+    <!-- Live Preview Interactive Scripts -->
     <script>
-        const imgInput = document.getElementById('imgInput');
-        const textInput = document.getElementById('textInput');
-        const fontFamilySelect = document.getElementById('fontFamily');
-        const fontSizeInput = document.getElementById('fontSize');
-        const textColorInput = document.getElementById('textColor');
-        const opacityInput = document.getElementById('opacity');
-        const rotationInput = document.getElementById('rotation');
-        const rotationVal = document.getElementById('rotationVal');
-        const positionSelect = document.getElementById('position');
-        const tileDensityGroup = document.getElementById('tileDensityGroup');
-        const tileSpacingInput = document.getElementById('tileSpacing');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const gallery = document.getElementById('gallery');
-        const downloadZipBtn = document.getElementById('downloadZipBtn');
-        const deleteCurrentBtn = document.getElementById('deleteCurrentBtn');
-        const clearAllBtn = document.getElementById('clearAllBtn');
+        // --- 1. Watermark Live Preview Card ---
+        const wmCanvas = document.getElementById('hubWmCanvas');
+        const wmCtx = wmCanvas.getContext('2d');
+        const wmOpacityInput = document.getElementById('hubWmOpacity');
+        const wmModeBtn = document.getElementById('hubWmModeBtn');
+        let isTileMode = false;
 
-        let loadedImages = [];
-        let selectedIndex = -1;
+        function renderWmHubPreview() {
+            const w = wmCanvas.width;
+            const h = wmCanvas.height;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadState();
-        });
+            // Draw demo photo background (modern gradient scenery)
+            const grad = wmCtx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#1e293b');
+            grad.addColorStop(0.5, '#3b82f6');
+            grad.addColorStop(1, '#93c5fd');
+            wmCtx.fillStyle = grad;
+            wmCtx.fillRect(0, 0, w, h);
 
-        function saveState() {
-            const controlsData = {
-                text: textInput.value,
-                fontFamily: fontFamilySelect.value,
-                fontSize: fontSizeInput.value,
-                textColor: textColorInput.value,
-                opacity: opacityInput.value,
-                rotation: rotationInput.value,
-                position: positionSelect.value,
-                tileSpacing: tileSpacingInput.value,
-                selectedIndex: selectedIndex
-            };
-            
-            const imagesData = loadedImages.map(item => ({
-                name: item.name,
-                src: item.img.src
-            }));
+            // Scenery mountain shapes
+            wmCtx.fillStyle = '#0f172a';
+            wmCtx.beginPath();
+            wmCtx.moveTo(0, h);
+            wmCtx.lineTo(w * 0.35, h * 0.4);
+            wmCtx.lineTo(w * 0.7, h);
+            wmCtx.fill();
 
-            try {
-                localStorage.setItem('watermark_controls', JSON.stringify(controlsData));
-                localStorage.setItem('watermark_images', JSON.stringify(imagesData));
-            } catch (e) {
-                console.warn('El almacenamiento local está lleno o no está disponible.', e);
-            }
-        }
+            wmCtx.fillStyle = '#1e3a8a';
+            wmCtx.beginPath();
+            wmCtx.moveTo(w * 0.4, h);
+            wmCtx.lineTo(w * 0.75, h * 0.48);
+            wmCtx.lineTo(w, h);
+            wmCtx.fill();
 
-        async function loadState() {
-            const savedControls = localStorage.getItem('watermark_controls');
-            const savedImages = localStorage.getItem('watermark_images');
+            // Watermark text
+            const text = '© Mi Marca';
+            const opacity = parseFloat(wmOpacityInput.value);
 
-            if (savedControls) {
-                const data = JSON.parse(savedControls);
-                textInput.value = data.text ?? '© Mi Marca';
-                fontFamilySelect.value = data.fontFamily ?? 'Arial, sans-serif';
-                fontSizeInput.value = data.fontSize ?? 48;
-                textColorInput.value = data.textColor ?? '#ffffff';
-                opacityInput.value = data.opacity ?? 0.5;
-                rotationInput.value = data.rotation ?? 0;
-                rotationVal.textContent = `${rotationInput.value}°`;
-                positionSelect.value = data.position ?? 'center';
-                tileSpacingInput.value = data.tileSpacing ?? 80;
-                selectedIndex = data.selectedIndex ?? -1;
-            }
+            wmCtx.save();
+            wmCtx.font = 'bold 20px Arial, sans-serif';
+            wmCtx.fillStyle = '#ffffff';
+            wmCtx.globalAlpha = opacity;
+            wmCtx.textAlign = 'center';
+            wmCtx.textBaseline = 'middle';
 
-            if (savedImages) {
-                const imagesData = JSON.parse(savedImages);
-                loadedImages = [];
-                for (let item of imagesData) {
-                    const img = await loadImageFromSrc(item.src);
-                    loadedImages.push({ name: item.name, img: img });
-                }
-                
-                if (selectedIndex >= loadedImages.length) {
-                    selectedIndex = loadedImages.length - 1;
-                }
-                
-                renderGallery();
-                renderCurrentPreview();
-            }
-        }
-
-        function loadImageFromSrc(src) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.src = src;
-            });
-        }
-
-        window.setRotation = function(angle) {
-            rotationInput.value = angle;
-            rotationVal.textContent = `${angle}°`;
-            renderCurrentPreview();
-            saveState();
-        };
-
-        rotationInput.addEventListener('input', () => {
-            rotationVal.textContent = `${rotationInput.value}°`;
-            renderCurrentPreview();
-            saveState();
-        });
-
-        imgInput.addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-            await processFiles(files);
-            imgInput.value = '';
-        });
-
-        window.addEventListener('paste', async (e) => {
-            const items = e.clipboardData.items;
-            const files = [];
-
-            for (let item of items) {
-                if (item.type.indexOf('image') !== -1) {
-                    const blob = item.getAsFile();
-                    if (blob) {
-                        const fileName = `pegado_${Date.now()}_${files.length + 1}.png`;
-                        const file = new File([blob], fileName, { type: blob.type });
-                        files.push(file);
+            if (isTileMode) {
+                for (let y = 25; y < h + 25; y += 45) {
+                    for (let x = 40; x < w + 40; x += 110) {
+                        wmCtx.save();
+                        wmCtx.translate(x, y);
+                        wmCtx.rotate(-0.35);
+                        wmCtx.fillText(text, 0, 0);
+                        wmCtx.restore();
                     }
                 }
-            }
-
-            if (files.length > 0) {
-                await processFiles(files);
-            }
-        });
-
-        async function processFiles(files) {
-            for (let file of files) {
-                const img = await loadImage(file);
-                loadedImages.push({ name: file.name, img: img });
-            }
-
-            selectedIndex = loadedImages.length - 1;
-            renderGallery();
-            renderCurrentPreview();
-            saveState();
-        }
-
-        function removeImage(index) {
-            if (index < 0 || index >= loadedImages.length) return;
-            loadedImages.splice(index, 1);
-
-            if (loadedImages.length === 0) {
-                selectedIndex = -1;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                canvas.width = 0;
-                canvas.height = 0;
-            } else if (selectedIndex >= loadedImages.length) {
-                selectedIndex = loadedImages.length - 1;
-            }
-
-            renderGallery();
-            renderCurrentPreview();
-            saveState();
-        }
-
-        deleteCurrentBtn.addEventListener('click', () => {
-            if (selectedIndex !== -1) {
-                removeImage(selectedIndex);
-            }
-        });
-
-        clearAllBtn.addEventListener('click', () => {
-            loadedImages = [];
-            selectedIndex = -1;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            canvas.width = 0;
-            canvas.height = 0;
-            localStorage.removeItem('watermark_controls');
-            localStorage.removeItem('watermark_images');
-            renderGallery();
-            renderCurrentPreview();
-        });
-
-        function renderGallery() {
-            gallery.innerHTML = '';
-            
-            loadedImages.forEach((item, index) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'thumb-wrapper';
-
-                const thumb = document.createElement('img');
-                thumb.src = item.img.src;
-                if (index === selectedIndex) {
-                    thumb.classList.add('active');
-                }
-
-                thumb.addEventListener('click', () => {
-                    selectedIndex = index;
-                    updateActiveThumbnail();
-                    renderCurrentPreview();
-                    saveState();
-                });
-
-                const delBtn = document.createElement('button');
-                delBtn.className = 'delete-thumb-btn';
-                delBtn.innerHTML = '&times;';
-                delBtn.title = 'Borrar imagen';
-                delBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    removeImage(index);
-                });
-
-                wrapper.appendChild(thumb);
-                wrapper.appendChild(delBtn);
-                gallery.appendChild(wrapper);
-            });
-
-            const hasImages = loadedImages.length > 0;
-            downloadZipBtn.disabled = !hasImages;
-            copyBtn.disabled = !hasImages;
-            deleteCurrentBtn.disabled = !hasImages;
-        }
-
-        function updateActiveThumbnail() {
-            const wrappers = gallery.querySelectorAll('.thumb-wrapper');
-            wrappers.forEach((wrapper, idx) => {
-                const img = wrapper.querySelector('img');
-                if (idx === selectedIndex) {
-                    img.classList.add('active');
-                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                } else {
-                    img.classList.remove('active');
-                }
-            });
-        }
-
-        function loadImage(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => resolve(img);
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function toggleTileControls() {
-            if (positionSelect.value === 'tile') {
-                tileDensityGroup.classList.remove('hidden');
             } else {
-                tileDensityGroup.classList.add('hidden');
+                wmCtx.save();
+                wmCtx.translate(w / 2, h / 2);
+                wmCtx.rotate(-0.15);
+                wmCtx.fillText(text, 0, 0);
+                wmCtx.restore();
             }
+            wmCtx.restore();
         }
 
-        function applyWatermarkToCanvas(imgItem) {
-            const img = imgItem.img;
-            const width = img.width;
-            const height = img.height;
+        wmOpacityInput.addEventListener('input', renderWmHubPreview);
+        wmModeBtn.addEventListener('click', () => {
+            isTileMode = !isTileMode;
+            wmModeBtn.textContent = isTileMode ? 'Centre' : 'Mosaico';
+            renderWmHubPreview();
+        });
+        renderWmHubPreview();
 
-            canvas.width = width;
-            canvas.height = height;
+        // --- 2. Remove BG Split Slider Live Preview Card ---
+        const splitWrap = document.getElementById('hubSplitWrap');
+        const bgBaseCanvas = document.getElementById('hubBgBaseCanvas');
+        const cutoutCanvas = document.getElementById('hubCutoutCanvas');
+        const splitDivider = document.getElementById('hubSplitDivider');
 
-            ctx.clearRect(0, 0, width, height);
-            ctx.drawImage(img, 0, 0, width, height);
+        function initSplitPreview() {
+            const w = bgBaseCanvas.width;
+            const h = bgBaseCanvas.height;
 
-            const text = textInput.value;
-            if (!text) return;
+            const bCtx = bgBaseCanvas.getContext('2d');
+            const cCtx = cutoutCanvas.getContext('2d');
 
-            const fontSize = parseInt(fontSizeInput.value, 10);
-            const fontFamily = fontFamilySelect.value;
-            const opacity = parseFloat(opacityInput.value);
-            const rotation = (parseInt(rotationInput.value, 10) * Math.PI) / 180;
-            const position = positionSelect.value;
+            // 1. Draw Full Scene on bgBaseCanvas (Person silhouette with colorful sunset background)
+            const bgGrad = bCtx.createLinearGradient(0, 0, w, h);
+            bgGrad.addColorStop(0, '#f97316');
+            bgGrad.addColorStop(0.5, '#ec4899');
+            bgGrad.addColorStop(1, '#8b5cf6');
+            bCtx.fillStyle = bgGrad;
+            bCtx.fillRect(0, 0, w, h);
 
+            // Sun
+            bCtx.fillStyle = '#fef08a';
+            bCtx.beginPath();
+            bCtx.arc(w * 0.7, h * 0.35, 36, 0, Math.PI * 2);
+            bCtx.fill();
+
+            // Draw subject on bgBaseCanvas
+            drawSubject(bCtx, w, h);
+
+            // 2. Draw ONLY Subject on cutoutCanvas (transparent background)
+            cCtx.clearRect(0, 0, w, h);
+            drawSubject(cCtx, w, h);
+        }
+
+        function drawSubject(ctx, w, h) {
             ctx.save();
-            ctx.font = `bold ${fontSize}px ${fontFamily}`;
-            ctx.fillStyle = textColorInput.value;
-            ctx.globalAlpha = opacity;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            if (position === 'tile') {
-                const spacing = parseInt(tileSpacingInput.value, 10);
-                const textWidth = ctx.measureText(text).width;
-                const stepX = textWidth + spacing;
-                const stepY = fontSize + spacing;
-
-                let rowIdx = 0;
-                for (let y = -height; y < height * 2; y += stepY) {
-                    const shiftX = (rowIdx % 2 === 0) ? 0 : stepX / 2;
-                    for (let x = -width; x < width * 2; x += stepX) {
-                        ctx.save();
-                        ctx.translate(x + shiftX, y);
-                        ctx.rotate(rotation);
-                        ctx.fillText(text, 0, 0);
-                        ctx.restore();
-                    }
-                    rowIdx++;
-                }
-            } else {
-                let posX = width / 2;
-                let posY = height / 2;
-                const margin = fontSize;
-
-                if (position === 'top-left') {
-                    posX = margin + ctx.measureText(text).width / 2;
-                    posY = margin;
-                } else if (position === 'top-right') {
-                    posX = width - margin - ctx.measureText(text).width / 2;
-                    posY = margin;
-                } else if (position === 'bottom-left') {
-                    posX = margin + ctx.measureText(text).width / 2;
-                    posY = height - margin;
-                } else if (position === 'bottom-right') {
-                    posX = width - margin - ctx.measureText(text).width / 2;
-                    posY = height - margin;
-                } else if (position === 'top-center') {
-                    posX = width / 2;
-                    posY = margin;
-                } else if (position === 'bottom-center') {
-                    posX = width / 2;
-                    posY = height - margin;
-                } else if (position === 'middle-left') {
-                    posX = margin + ctx.measureText(text).width / 2;
-                    posY = height / 2;
-                } else if (position === 'middle-right') {
-                    posX = width - margin - ctx.measureText(text).width / 2;
-                    posY = height / 2;
-                }
-
-                ctx.translate(posX, posY);
-                ctx.rotate(rotation);
-                ctx.fillText(text, 0, 0);
-            }
-
+            ctx.fillStyle = '#1e1b4b'; // sharp character silhouette
+            // Head
+            ctx.beginPath();
+            ctx.arc(w * 0.45, h * 0.42, 34, 0, Math.PI * 2);
+            ctx.fill();
+            // Shoulders & Body
+            ctx.beginPath();
+            ctx.moveTo(w * 0.45 - 55, h);
+            ctx.quadraticCurveTo(w * 0.45 - 45, h * 0.65, w * 0.45 - 28, h * 0.62);
+            ctx.lineTo(w * 0.45 + 28, h * 0.62);
+            ctx.quadraticCurveTo(w * 0.45 + 45, h * 0.65, w * 0.45 + 55, h);
+            ctx.closePath();
+            ctx.fill();
+            // Camera / Accessory in hands
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(w * 0.45 - 18, h * 0.68, 36, 24);
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(w * 0.45, h * 0.8, 8, 0, Math.PI * 2);
+            ctx.fill();
             ctx.restore();
         }
 
-        function renderCurrentPreview() {
-            toggleTileControls();
-            if (loadedImages.length > 0 && selectedIndex !== -1 && loadedImages[selectedIndex]) {
-                applyWatermarkToCanvas(loadedImages[selectedIndex]);
-            }
+        let isSplitDragging = false;
+        function updateSplit(clientX) {
+            const rect = splitWrap.getBoundingClientRect();
+            let pos = (clientX - rect.left) / rect.width;
+            pos = Math.max(0.05, Math.min(0.95, pos));
+            const percentage = pos * 100;
+            cutoutCanvas.style.clipPath = `inset(0 0 0 ${percentage}%)`;
+            splitDivider.style.left = `${percentage}%`;
         }
 
-        [textInput, fontFamilySelect, fontSizeInput, textColorInput, opacityInput, positionSelect, tileSpacingInput].forEach(element => {
-            element.addEventListener('input', () => {
-                renderCurrentPreview();
-                saveState();
-            });
+        splitWrap.addEventListener('mousedown', (e) => {
+            isSplitDragging = true;
+            updateSplit(e.clientX);
+        });
+        window.addEventListener('mouseup', () => isSplitDragging = false);
+        window.addEventListener('mousemove', (e) => {
+            if (isSplitDragging) updateSplit(e.clientX);
+        });
+        // Touch support for mobile
+        splitWrap.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) updateSplit(e.touches[0].clientX);
         });
 
-        
-        const exportFormatSelect = document.getElementById('exportFormat');
-        const copyBtn = document.getElementById('copyBtn');
-
-        // Copy button handler
-        copyBtn.addEventListener('click', async () => {
-            if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
-            try {
-                canvas.toBlob(async (blob) => {
-                    if (!blob) return;
-                    // PNG is supported universally by ClipboardItem
-                    if (navigator.clipboard && window.ClipboardItem) {
-                        // If selected format is JPEG/WEBP, we convert canvas to PNG for clipboard compatibility if needed, or use blob directly
-                        let copyBlob = blob;
-                        if (exportFormatSelect.value !== 'image/png') {
-                            const tempCanvas = document.createElement('canvas');
-                            tempCanvas.width = canvas.width;
-                            tempCanvas.height = canvas.height;
-                            const tCtx = tempCanvas.getContext('2d');
-                            tCtx.drawImage(canvas, 0, 0);
-                            copyBlob = await new Promise(r => tempCanvas.toBlob(r, 'image/png'));
-                        }
-                        const item = new ClipboardItem({ 'image/png': copyBlob });
-                        await navigator.clipboard.write([item]);
-                        const origText = copyBtn.textContent;
-                        copyBtn.textContent = '¡Copiado al portapapeles!';
-                        setTimeout(() => { copyBtn.textContent = origText; }, 2000);
-                    } else {
-                        alert('Tu navegador no soporta la copia directa de imágenes al portapapeles.');
-                    }
-                }, exportFormatSelect.value, 0.92);
-            } catch (err) {
-                console.error(err);
-                alert('No se pudo copiar la imagen al portapapeles.');
-            }
-        });
-
-        downloadZipBtn.addEventListener('click', async () => {
-            if (loadedImages.length === 0) return;
-
-            const zip = new JSZip();
-            downloadZipBtn.disabled = true;
-            downloadZipBtn.textContent = 'Generando ZIP...';
-
-            const mimeType = exportFormatSelect.value;
-            let ext = 'png';
-            if (mimeType === 'image/jpeg') ext = 'jpg';
-            if (mimeType === 'image/webp') ext = 'webp';
-
-            loadedImages.forEach((item, index) => {
-                applyWatermarkToCanvas(item);
-                const dataUrl = canvas.toDataURL(mimeType, 0.92);
-                const base64Data = dataUrl.split(',')[1];
-                
-                const sequenceNum = String(index + 1).padStart(3, '0');
-                const fileName = `${sequenceNum}.${ext}`;
-
-                zip.file(fileName, base64Data, { base64: true });
-            });
-
-            const content = await zip.generateAsync({ type: 'blob' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = 'imagenes_con_marca_de_agua.zip';
-            link.click();
-
-            downloadZipBtn.disabled = false;
-            downloadZipBtn.textContent = 'Descargar Todas (.ZIP)';
-            renderCurrentPreview();
-        });
+        initSplitPreview();
     </script>
 </body>
 </html>
