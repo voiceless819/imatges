@@ -71,8 +71,9 @@
             justify-content: center;
         }
         canvas {
+            width: 300px;
+            height: 180px;
             max-width: 100%;
-            height: auto;
             display: block;
         }
         .checker-bg {
@@ -123,7 +124,7 @@
         <div class="hub-card">
             <div>
                 <h2>Quitar Fondo</h2>
-                <p>Quita el fondo a tus imágenes manteniendo la resolución original.</p>
+                <p>Quita el fondo a tus imágenes en lote manteniendo la resolución original.</p>
                 <div class="preview-box checker-bg">
                     <canvas id="bgPreview" width="300" height="180"></canvas>
                 </div>
@@ -133,20 +134,28 @@
     </div>
 
     <script>
+        function setupHiDPICanvas(canvas, logicalW, logicalH) {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = logicalW * dpr;
+            canvas.height = logicalH * dpr;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            return ctx;
+        }
+
+        const w = 300;
+        const h = 180;
+
         // Preview 1: Marca de Agua
         const wmCanvas = document.getElementById('wmPreview');
-        const wmCtx = wmCanvas.getContext('2d');
-        const w = wmCanvas.width;
-        const h = wmCanvas.height;
+        const wmCtx = setupHiDPICanvas(wmCanvas, w, h);
 
-        // Draw sample photo background
         const grad = wmCtx.createLinearGradient(0, 0, w, h);
         grad.addColorStop(0, '#3a7bd5');
         grad.addColorStop(1, '#3a6073');
         wmCtx.fillStyle = grad;
         wmCtx.fillRect(0, 0, w, h);
 
-        // Mountain shape
         wmCtx.fillStyle = '#2c3e50';
         wmCtx.beginPath();
         wmCtx.moveTo(0, h);
@@ -154,7 +163,6 @@
         wmCtx.lineTo(w * 0.7, h);
         wmCtx.fill();
 
-        // Watermark text
         wmCtx.save();
         wmCtx.font = 'bold 22px Arial, sans-serif';
         wmCtx.fillStyle = '#ffffff';
@@ -166,18 +174,29 @@
         wmCtx.fillText('© Mi Marca', 0, 0);
         wmCtx.restore();
 
-        // Preview 2: Quitar Fondo (Transparent cutout)
+        // Preview 2: Quitar Fondo (Split Antes / Después)
         const bgCanvas = document.getElementById('bgPreview');
-        const bgCtx = bgCanvas.getContext('2d');
+        const bgCtx = setupHiDPICanvas(bgCanvas, w, h);
         bgCtx.clearRect(0, 0, w, h);
 
-        // Draw a clean silhouette subject cut out on transparency
+        // Left half: original background
+        bgCtx.save();
+        bgCtx.beginPath();
+        bgCtx.rect(0, 0, w / 2, h);
+        bgCtx.clip();
+        const bgGrad = bgCtx.createLinearGradient(0, 0, w, h);
+        bgGrad.addColorStop(0, '#60a5fa');
+        bgGrad.addColorStop(1, '#3b82f6');
+        bgCtx.fillStyle = bgGrad;
+        bgCtx.fillRect(0, 0, w / 2, h);
+        bgCtx.restore();
+
+        // Subject silhouette across the center
         bgCtx.fillStyle = '#343a40';
-        // Head
         bgCtx.beginPath();
         bgCtx.arc(w / 2, h * 0.35, 32, 0, Math.PI * 2);
         bgCtx.fill();
-        // Body / Shoulders
+
         bgCtx.beginPath();
         bgCtx.moveTo(w / 2 - 50, h);
         bgCtx.quadraticCurveTo(w / 2 - 40, h * 0.58, w / 2 - 25, h * 0.55);
@@ -185,6 +204,14 @@
         bgCtx.quadraticCurveTo(w / 2 + 40, h * 0.58, w / 2 + 50, h);
         bgCtx.closePath();
         bgCtx.fill();
+
+        // Split line
+        bgCtx.strokeStyle = '#ffffff';
+        bgCtx.lineWidth = 2;
+        bgCtx.beginPath();
+        bgCtx.moveTo(w / 2, 0);
+        bgCtx.lineTo(w / 2, h);
+        bgCtx.stroke();
     </script>
 </body>
 </html>

@@ -96,6 +96,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            min-height: 220px;
         }
         canvas {
             max-width: 100%;
@@ -111,6 +112,53 @@
             transform: translate(-50%, -50%);
             display: none;
             z-index: 10;
+        }
+        .canvas-loader {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.65);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            z-index: 8;
+            pointer-events: none;
+        }
+        .canvas-loader-pill {
+            background: #212529;
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+        .spinner-dark {
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(73,80,87,0.25);
+            border-top-color: #28a745;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         .gallery {
             display: flex;
@@ -136,6 +184,30 @@
         }
         .gallery img.active {
             border-color: #007bff;
+        }
+        .gallery img.is-loading {
+            opacity: 0.55;
+        }
+        .thumb-badge {
+            position: absolute;
+            bottom: 3px;
+            left: 3px;
+            background: rgba(33, 37, 41, 0.82);
+            color: #ffffff;
+            font-size: 10px;
+            line-height: 1;
+            padding: 3px 5px;
+            border-radius: 3px;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .thumb-badge.done {
+            background: #28a745;
+        }
+        .thumb-badge.error {
+            background: #dc3545;
         }
         .delete-thumb-btn {
             position: absolute;
@@ -187,13 +259,27 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+        .status-box {
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
         .status-text {
             font-size: 13px;
             color: #495057;
-            padding: 6px;
-            background: #e9ecef;
-            border-radius: 4px;
+            padding: 6px 8px;
             text-align: center;
+        }
+        .status-progress {
+            height: 4px;
+            background: #dee2e6;
+            width: 100%;
+        }
+        .status-progress-bar {
+            height: 100%;
+            background: #28a745;
+            width: 0%;
+            transition: width 0.15s ease;
         }
     </style>
 </head>
@@ -215,7 +301,12 @@
                 <input type="file" id="imgInput" accept="image/*" multiple>
             </div>
 
-            <div class="status-text" id="statusLabel">Listo para procesar</div>
+            <div class="status-box">
+                <div class="status-text" id="statusLabel">Listo para procesar</div>
+                <div class="status-progress hidden" id="statusProgressWrap">
+                    <div class="status-progress-bar" id="statusProgressBar"></div>
+                </div>
+            </div>
 
             <div class="control-group">
                 <label for="bgType">Tipo de Fondo:</label>
@@ -255,7 +346,10 @@
                 </div>
                 <label for="brushSize" style="margin-top: 6px;">Tamaño del Pincel: <strong id="brushSizeVal">25px</strong></label>
                 <input type="range" id="brushSize" min="5" max="80" value="25">
-                <button type="button" id="btnResetMask" style="background-color: #6c757d; font-size: 12px; padding: 4px; margin-top: 4px;">Reiniciar Máscara</button>
+                <div class="quick-btn-group" style="margin-top: 4px;">
+                    <button type="button" id="btnUndoMask" disabled style="background-color: #6c757d; flex: 1; padding: 4px;">Deshacer (Ctrl+Z)</button>
+                    <button type="button" id="btnResetMask" style="background-color: #6c757d; flex: 1; padding: 4px;">Reiniciar</button>
+                </div>
             </div>
 
             <div class="control-group">
@@ -277,6 +371,12 @@
             <div class="gallery" id="gallery"></div>
             <div class="canvas-wrap" id="canvasWrap">
                 <div id="brushCursor"></div>
+                <div class="canvas-loader hidden" id="canvasLoader">
+                    <div class="canvas-loader-pill">
+                        <div class="spinner"></div>
+                        <span id="canvasLoaderText">Quitando fondo...</span>
+                    </div>
+                </div>
                 <canvas id="canvas"></canvas>
             </div>
             <button id="deleteCurrentBtn" class="delete-current-btn" disabled>Borrar Imagen Seleccionada</button>
@@ -284,11 +384,14 @@
     </div>
 
     <script type="module">
-        import { removeBackground } from 'https://esm.sh/@imgly/background-removal@1.4.5';
+        import { preload, removeBackground } from 'https://esm.sh/@imgly/background-removal@1.4.5';
 
-        // DOM Mapping
+        // DOM Elements
         const imgInput = document.getElementById('imgInput');
         const statusLabel = document.getElementById('statusLabel');
+        const statusProgressWrap = document.getElementById('statusProgressWrap');
+        const statusProgressBar = document.getElementById('statusProgressBar');
+
         const bgType = document.getElementById('bgType');
         const colorGroup = document.getElementById('colorGroup');
         const bgColor = document.getElementById('bgColor');
@@ -304,6 +407,7 @@
         const btnRestore = document.getElementById('btnRestore');
         const brushSize = document.getElementById('brushSize');
         const brushSizeVal = document.getElementById('brushSizeVal');
+        const btnUndoMask = document.getElementById('btnUndoMask');
         const btnResetMask = document.getElementById('btnResetMask');
         const brushCursor = document.getElementById('brushCursor');
 
@@ -315,28 +419,180 @@
         const deleteCurrentBtn = document.getElementById('deleteCurrentBtn');
 
         const canvasWrap = document.getElementById('canvasWrap');
+        const canvasLoader = document.getElementById('canvasLoader');
+        const canvasLoaderText = document.getElementById('canvasLoaderText');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const gallery = document.getElementById('gallery');
 
-        // Style canvas containment
         canvas.style.maxWidth = '100%';
         canvas.style.maxHeight = '100%';
         canvas.style.objectFit = 'contain';
 
-        // Global Batch Queue State
-        let imageQueue = []; // Array de objetos: { id, name, originalFile, originalImg, maskCanvas, origMaskCanvas, status }
-        let currentIndex = -1;
-        let isProcessing = false;
+        // Batch Queue & Concurrency State
+        const MAX_CONCURRENCY = 3; // Procesa hasta 3 imágenes simultáneamente
+        const AI_MAX_DIM = 1024;   // El modelo ISNet opera internamente a 1024x1024
 
-        // Custom background / brush state
+        let imageQueue = []; // { id, name, originalFile, originalImg, maskCanvas, maskBlob, undoStack, status }
+        let currentIndex = -1;
+        let activeWorkers = 0;
+        let queueGeneration = 0;
+        let pasteCounter = 1;
+
         let customBgImage = null;
         let isBrushActive = false;
-        let brushMode = 'erase'; // 'erase' | 'restore'
+        let brushMode = 'erase';
         let brushRadius = 25;
         let isPainting = false;
+        let lastPaintPoint = null;
 
-        // Fallback local removal in case of network/offline issues
+        // AI Preload & Progress Tracking
+        let aiReady = false;
+        let aiPreloadPromise = null;
+        let downloadProgressMap = new Map();
+        let lastDownloadPct = 0;
+
+        const AI_CONFIG = {
+            model: 'small', // Modelo cuantizado de 8 bits (44 MB): 2.5x más rápido en CPU y mitad de descarga que 'medium'
+            output: { format: 'image/png', quality: 1 },
+            progress: (key, current, total) => {
+                if (key && key.startsWith('fetch:') && total > 0) {
+                    downloadProgressMap.set(key, { current, total });
+                    let sumCur = 0, sumTot = 0;
+                    downloadProgressMap.forEach(v => { sumCur += v.current; sumTot += v.total; });
+                    lastDownloadPct = Math.min(99, Math.round((sumCur / sumTot) * 100));
+                    if (!aiReady && activeWorkers > 0) {
+                        updateGlobalStatus();
+                    }
+                }
+            }
+        };
+
+        function ensureAIReady() {
+            if (aiReady) return Promise.resolve();
+            if (!aiPreloadPromise) {
+                aiPreloadPromise = preload(AI_CONFIG)
+                    .then(() => { aiReady = true; })
+                    .catch((err) => {
+                        console.warn('Aviso al precargar IA:', err);
+                        aiPreloadPromise = null;
+                    });
+            }
+            return aiPreloadPromise;
+        }
+
+        // Start preloading AI in the background immediately when page opens
+        window.addEventListener('DOMContentLoaded', () => {
+            ensureAIReady();
+        });
+
+        // Update status bar & canvas loader overlay
+        function updateGlobalStatus() {
+            const total = imageQueue.length;
+            if (total === 0) {
+                statusLabel.innerHTML = 'Listo para procesar';
+                statusProgressWrap.classList.add('hidden');
+                statusProgressBar.style.width = '0%';
+                canvasLoader.classList.add('hidden');
+                return;
+            }
+
+            const doneCount = imageQueue.filter(i => i.status === 'done').length;
+            const errorCount = imageQueue.filter(i => i.status === 'error').length;
+            const finishedCount = doneCount + errorCount;
+            const inProgressCount = imageQueue.filter(i => i.status === 'processing' || i.status === 'pending').length;
+
+            if (inProgressCount > 0) {
+                statusProgressWrap.classList.remove('hidden');
+                if (!aiReady && lastDownloadPct > 0 && lastDownloadPct < 99) {
+                    statusLabel.innerHTML = `<span class="spinner-dark"></span>Descargando IA (1ª vez): ${lastDownloadPct}% (${finishedCount}/${total} listas)`;
+                    statusProgressBar.style.width = `${lastDownloadPct}%`;
+                } else {
+                    const pct = Math.max(10, Math.round((finishedCount / total) * 100));
+                    statusLabel.innerHTML = `<span class="spinner-dark"></span>Quitando fondo (${finishedCount}/${total} listas, ${activeWorkers} en paralelo)...`;
+                    statusProgressBar.style.width = `${pct}%`;
+                }
+            } else {
+                statusProgressWrap.classList.add('hidden');
+                statusProgressBar.style.width = '100%';
+                if (errorCount > 0 && doneCount === 0) {
+                    statusLabel.textContent = `Error al procesar (${errorCount} fallidas)`;
+                } else if (errorCount > 0) {
+                    statusLabel.textContent = `¡Completado! (${doneCount} listas, ${errorCount} con error)`;
+                } else {
+                    statusLabel.textContent = `¡Completado! (${doneCount} ${doneCount === 1 ? 'imagen procesada' : 'imágenes procesadas'})`;
+                }
+            }
+
+            // Update main canvas loader overlay for the currently selected image
+            const currentItem = imageQueue[currentIndex];
+            if (currentItem && (currentItem.status === 'pending' || currentItem.status === 'processing')) {
+                canvasLoader.classList.remove('hidden');
+                if (!aiReady && lastDownloadPct > 0 && lastDownloadPct < 99) {
+                    canvasLoaderText.textContent = `Descargando motor IA (${lastDownloadPct}%)...`;
+                } else {
+                    canvasLoaderText.textContent = `Quitando fondo a "${currentItem.name}"...`;
+                }
+            } else {
+                canvasLoader.classList.add('hidden');
+            }
+        }
+
+        // Scale input image on GPU canvas to max 1024px before feeding into AI
+        // (Avoids slow multi-second JS pixel loops inside @imgly on 4K photos & converts AVIF/BMP/GIF to PNG)
+        function prepareAIInputBlob(img) {
+            return new Promise((resolve) => {
+                const w = img.naturalWidth || img.width;
+                const h = img.naturalHeight || img.height;
+                const scale = Math.min(1, AI_MAX_DIM / Math.max(w, h));
+                const targetW = Math.max(1, Math.round(w * scale));
+                const targetH = Math.max(1, Math.round(h * scale));
+
+                const c = document.createElement('canvas');
+                c.width = targetW;
+                c.height = targetH;
+                const tCtx = c.getContext('2d');
+                tCtx.drawImage(img, 0, 0, targetW, targetH);
+                c.toBlob(resolve, 'image/png');
+            });
+        }
+
+        // Apply AI cutout mask onto original full-resolution image (100% lossless native pixels)
+        async function buildFullResMaskCanvas(originalImg, cutoutBlob) {
+            const w = originalImg.naturalWidth || originalImg.width;
+            const h = originalImg.naturalHeight || originalImg.height;
+
+            const maskCanvas = document.createElement('canvas');
+            maskCanvas.width = w;
+            maskCanvas.height = h;
+            const mCtx = maskCanvas.getContext('2d');
+            mCtx.imageSmoothingEnabled = true;
+            mCtx.imageSmoothingQuality = 'high';
+
+            // 1. Draw original image at 100% native resolution
+            mCtx.drawImage(originalImg, 0, 0, w, h);
+
+            // 2. Multiply alpha channel by the smoothly upscaled AI mask
+            mCtx.globalCompositeOperation = 'destination-in';
+            if (window.createImageBitmap) {
+                const bmp = await createImageBitmap(cutoutBlob);
+                mCtx.drawImage(bmp, 0, 0, w, h);
+                bmp.close();
+            } else {
+                const cutoutImg = await new Promise((res, rej) => {
+                    const url = URL.createObjectURL(cutoutBlob);
+                    const i = new Image();
+                    i.onload = () => { URL.revokeObjectURL(url); res(i); };
+                    i.onerror = (e) => { URL.revokeObjectURL(url); rej(e); };
+                    i.src = url;
+                });
+                mCtx.drawImage(cutoutImg, 0, 0, w, h);
+            }
+            mCtx.globalCompositeOperation = 'source-over';
+            return maskCanvas;
+        }
+
+        // Border flood-fill fallback in case CDN is unreachable/offline
         function fallbackLocalRemoval(img) {
             return new Promise((resolve) => {
                 const c = document.createElement('canvas');
@@ -348,68 +604,46 @@
                 tCtx.drawImage(img, 0, 0, w, h);
                 const data = tCtx.getImageData(0, 0, w, h);
                 const d = data.data;
-                const corners = [0, (w - 1) * 4, ((h - 1) * w) * 4, ((h - 1) * w + w - 1) * 4];
-                let r = 0, g = 0, b = 0;
-                corners.forEach(i => { r += d[i]; g += d[i+1]; b += d[i+2]; });
-                r /= 4; g /= 4; b /= 4;
+                const r = d[0], g = d[1], b = d[2];
                 for (let i = 0; i < d.length; i += 4) {
-                    const dist = Math.hypot(d[i]-r, d[i+1]-g, d[i+2]-b);
-                    if (dist < 36) d[i+3] = 0;
-                    else if (dist < 50) d[i+3] = Math.round(((dist - 36) / 14) * 255);
+                    const dist = Math.hypot(d[i] - r, d[i + 1] - g, d[i + 2] - b);
+                    if (dist < 36) d[i + 3] = 0;
+                    else if (dist < 50) d[i + 3] = Math.round(((dist - 36) / 14) * 255);
                 }
                 tCtx.putImageData(data, 0, 0);
                 c.toBlob(resolve, 'image/png');
             });
         }
 
-        // Helper to load file as HTMLImageElement
-        function fileToImage(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => resolve(img);
-                    img.onerror = reject;
-                    img.src = e.target.result;
-                };
-                reader.onerror = reject;
-                r.readAsDataURL(file);
-            });
-        }
-
-        // Add files to queue
+        // Add files to queue and trigger parallel processing
         async function addFilesToQueue(files) {
             if (!files || files.length === 0) return;
-            const newItems = [];
 
             for (const file of files) {
-                if (!file.type.startsWith('image/')) continue;
+                if (!file || !file.type || !file.type.startsWith('image/')) continue;
                 try {
+                    const objUrl = URL.createObjectURL(file);
                     const img = await new Promise((res, rej) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            const i = new Image();
-                            i.onload = () => res(i);
-                            i.onerror = rej;
-                            i.src = e.target.result;
-                        };
-                        reader.onerror = rej;
-                        reader.readAsDataURL(file);
+                        const i = new Image();
+                        i.onload = () => res(i);
+                        i.onerror = rej;
+                        i.src = objUrl;
                     });
 
                     const item = {
-                        id: Date.now() + Math.random(),
-                        name: file.name,
+                        id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                        name: file.name || `imagen_${pasteCounter++}.png`,
+                        objUrl: objUrl,
                         originalFile: file,
                         originalImg: img,
                         maskCanvas: null,
-                        origMaskCanvas: null,
+                        maskBlob: null,
+                        undoStack: [],
                         status: 'pending'
                     };
                     imageQueue.push(item);
-                    newItems.push(item);
                 } catch (err) {
-                    console.error('Error cargando imagen inicial:', err);
+                    console.error('Error cargando archivo:', err);
                 }
             }
 
@@ -419,76 +653,64 @@
 
             renderGallery();
             renderCurrentImage();
-            processQueue();
+            updateGlobalStatus();
+            scheduleQueue();
         }
 
-        // Process Queue sequentially
-        async function processQueue() {
-            if (isProcessing) return;
-            isProcessing = true;
+        // Concurrent Queue Scheduler (processes up to MAX_CONCURRENCY images in parallel)
+        function scheduleQueue() {
+            const gen = queueGeneration;
+            while (activeWorkers < MAX_CONCURRENCY) {
+                const nextItem = imageQueue.find(item => item.status === 'pending');
+                if (!nextItem) break;
+                processSingleItem(nextItem, gen);
+            }
+        }
 
-            const pending = imageQueue.filter(item => item.status === 'pending');
-            const total = imageQueue.length;
+        async function processSingleItem(item, gen) {
+            item.status = 'processing';
+            activeWorkers++;
+            updateGalleryBadge(item);
+            updateGlobalStatus();
 
-            for (let i = 0; i < imageQueue.length; i++) {
-                const item = imageQueue[i];
-                if (item.status === 'done') continue;
+            try {
+                // Ensure the shared ONNX session is initialized once before parallel runs
+                await ensureAIReady();
+                if (gen !== queueGeneration || !imageQueue.includes(item)) return;
 
-                statusLabel.textContent = `Procesando imagen ${i + 1} de ${total}... (Descargando IA si es la 1ª vez)`;
-                renderGallery();
+                const aiInputBlob = await prepareAIInputBlob(item.originalImg);
+                if (gen !== queueGeneration || !imageQueue.includes(item)) return;
 
+                let blobSinFondo;
                 try {
-                    let blobSinFondo;
-                    try {
-                        blobSinFondo = await removeBackground(item.originalFile, {
-                            model: 'medium',
-                            output: { format: 'image/png', quality: 1 }
-                        });
-                    } catch (aiErr) {
-                        console.warn('Fallback a procesamiento local:', aiErr);
-                        blobSinFondo = await fallbackLocalRemoval(item.originalImg);
-                    }
-
-                    const cutoutImg = await new Promise((res, rej) => {
-                        const img = new Image();
-                        img.onload = () => res(img);
-                        img.onerror = rej;
-                        img.src = URL.createObjectURL(blobSinFondo);
-                    });
-
-                    const w = item.originalImg.naturalWidth;
-                    const h = item.originalImg.naturalHeight;
-
-                    // Mask Canvas at 100% native resolution
-                    const maskCanvas = document.createElement('canvas');
-                    maskCanvas.width = w;
-                    maskCanvas.height = h;
-                    const mCtx = maskCanvas.getContext('2d');
-                    mCtx.drawImage(cutoutImg, 0, 0, w, h);
-
-                    // Backup for mask reset
-                    const origMaskCanvas = document.createElement('canvas');
-                    origMaskCanvas.width = w;
-                    origMaskCanvas.height = h;
-                    origMaskCanvas.getContext('2d').drawImage(maskCanvas, 0, 0);
-
-                    item.maskCanvas = maskCanvas;
-                    item.origMaskCanvas = origMaskCanvas;
-                    item.status = 'done';
-                } catch (err) {
-                    console.error('Error procesando imagen:', err);
-                    item.status = 'error';
+                    blobSinFondo = await removeBackground(aiInputBlob, AI_CONFIG);
+                    aiReady = true;
+                } catch (aiErr) {
+                    console.warn('Usando recorte alternativo local:', aiErr);
+                    blobSinFondo = await fallbackLocalRemoval(item.originalImg);
                 }
 
-                renderGallery();
-                if (currentIndex === i) {
-                    renderCurrentImage();
+                if (gen !== queueGeneration || !imageQueue.includes(item)) return;
+
+                item.maskBlob = blobSinFondo;
+                item.maskCanvas = await buildFullResMaskCanvas(item.originalImg, blobSinFondo);
+                item.undoStack = [];
+                item.status = 'done';
+            } catch (err) {
+                console.error('Error procesando imagen:', err);
+                item.status = 'error';
+            } finally {
+                if (gen === queueGeneration) {
+                    activeWorkers = Math.max(0, activeWorkers - 1);
+                    updateGalleryBadge(item);
+                    if (imageQueue[currentIndex] === item) {
+                        renderCurrentImage();
+                    }
+                    updateButtonStates();
+                    updateGlobalStatus();
+                    scheduleQueue();
                 }
             }
-
-            isProcessing = false;
-            statusLabel.textContent = `¡Completado! (${imageQueue.length} imágenes procesadas)`;
-            updateButtonStates();
         }
 
         // Render Current Image
@@ -497,6 +719,7 @@
                 canvas.width = 0;
                 canvas.height = 0;
                 updateButtonStates();
+                updateGlobalStatus();
                 return;
             }
 
@@ -510,15 +733,18 @@
             ctx.clearRect(0, 0, w, h);
 
             if (item.status !== 'done' || !item.maskCanvas) {
-                // Show original image while processing
+                ctx.save();
+                ctx.globalAlpha = 0.65;
                 ctx.drawImage(item.originalImg, 0, 0, w, h);
+                ctx.restore();
                 updateButtonStates();
+                updateGlobalStatus();
                 return;
             }
 
-            // 1. Render Background
+            // 1. Render Selected Background
             if (bgType.value === 'transparent') {
-                // Keep transparent; CSS checkerboard shows through
+                // Transparente: se ve la cuadrícula CSS
             } else if (bgType.value === 'color') {
                 ctx.fillStyle = bgColor.value;
                 ctx.fillRect(0, 0, w, h);
@@ -528,33 +754,43 @@
                 const sh = customBgImage.height * scale;
                 ctx.drawImage(customBgImage, (w - sw) / 2, (h - sh) / 2, sw, sh);
             } else if (bgType.value === 'blur') {
+                const scaledBlur = Math.max(2, Math.round(parseInt(blurAmount.value, 10) * (Math.max(w, h) / 1000)));
                 ctx.save();
-                ctx.filter = `blur(${blurAmount.value}px)`;
-                ctx.drawImage(item.originalImg, -20, -20, w + 40, h + 40);
+                ctx.filter = `blur(${scaledBlur}px)`;
+                ctx.drawImage(item.originalImg, 0, 0, w, h);
                 ctx.restore();
             }
 
             // 2. Render Cutout Subject
             ctx.drawImage(item.maskCanvas, 0, 0, w, h);
             updateButtonStates();
+            updateGlobalStatus();
         }
 
-        // Update gallery thumbnails
+        // Gallery Rendering
         function renderGallery() {
             gallery.innerHTML = '';
             imageQueue.forEach((item, index) => {
                 const wrap = document.createElement('div');
                 wrap.className = 'thumb-wrapper';
+                wrap.dataset.id = item.id;
 
                 const thumb = document.createElement('img');
                 thumb.src = item.originalImg.src;
                 if (index === currentIndex) thumb.classList.add('active');
+                if (item.status === 'pending' || item.status === 'processing') {
+                    thumb.classList.add('is-loading');
+                }
 
                 thumb.addEventListener('click', () => {
-                    currentIndex = index;
+                    currentIndex = imageQueue.indexOf(item);
                     updateActiveThumbnail();
                     renderCurrentImage();
                 });
+
+                const badge = document.createElement('div');
+                badge.className = 'thumb-badge';
+                applyBadgeState(badge, thumb, item.status);
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-thumb-btn';
@@ -562,13 +798,40 @@
                 delBtn.title = 'Borrar imagen';
                 delBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    removeImageAt(index);
+                    removeImageAt(imageQueue.indexOf(item));
                 });
 
                 wrap.appendChild(thumb);
+                wrap.appendChild(badge);
                 wrap.appendChild(delBtn);
                 gallery.appendChild(wrap);
             });
+        }
+
+        function applyBadgeState(badge, thumb, status) {
+            badge.className = 'thumb-badge';
+            if (status === 'pending' || status === 'processing') {
+                thumb.classList.add('is-loading');
+                badge.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:2px;"></span>';
+            } else if (status === 'done') {
+                thumb.classList.remove('is-loading');
+                badge.classList.add('done');
+                badge.textContent = '✓';
+            } else if (status === 'error') {
+                thumb.classList.remove('is-loading');
+                badge.classList.add('error');
+                badge.textContent = '!';
+            }
+        }
+
+        function updateGalleryBadge(item) {
+            const wrap = gallery.querySelector(`.thumb-wrapper[data-id="${item.id}"]`);
+            if (!wrap) return;
+            const thumb = wrap.querySelector('img');
+            const badge = wrap.querySelector('.thumb-badge');
+            if (thumb && badge) {
+                applyBadgeState(badge, thumb, item.status);
+            }
         }
 
         function updateActiveThumbnail() {
@@ -584,28 +847,34 @@
         }
 
         function updateButtonStates() {
-            const hasImages = imageQueue.length > 0;
-            const hasReady = imageQueue.some(i => i.status === 'done');
-            copyBtn.disabled = !hasReady;
-            downloadSingleBtn.disabled = !hasReady;
-            downloadZipBtn.disabled = !hasReady;
-            deleteCurrentBtn.disabled = !hasImages;
+            const currentItem = imageQueue[currentIndex];
+            const currentReady = Boolean(currentItem && currentItem.status === 'done' && currentItem.maskCanvas);
+            const anyReady = imageQueue.some(i => i.status === 'done' && i.maskCanvas);
+
+            copyBtn.disabled = !currentReady;
+            downloadSingleBtn.disabled = !currentReady;
+            downloadZipBtn.disabled = !anyReady;
+            deleteCurrentBtn.disabled = !currentItem;
+            btnUndoMask.disabled = !(currentReady && currentItem.undoStack && currentItem.undoStack.length > 0);
         }
 
         function removeImageAt(index) {
             if (index < 0 || index >= imageQueue.length) return;
-            imageQueue.splice(index, 1);
+            const [removed] = imageQueue.splice(index, 1);
+            if (removed && removed.objUrl) {
+                URL.revokeObjectURL(removed.objUrl);
+            }
             if (imageQueue.length === 0) {
                 currentIndex = -1;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 canvas.width = 0;
                 canvas.height = 0;
-                statusLabel.textContent = 'Listo para procesar';
             } else if (currentIndex >= imageQueue.length) {
                 currentIndex = imageQueue.length - 1;
             }
             renderGallery();
             renderCurrentImage();
+            updateGlobalStatus();
         }
 
         // Retouch Brush Setup
@@ -650,25 +919,65 @@
             brushCursor.style.height = `${Math.max(size, 6)}px`;
         }
 
-        btnResetMask.addEventListener('click', () => {
-            if (currentIndex === -1 || !imageQueue[currentIndex]) return;
+        function saveUndoSnapshot(item) {
+            if (!item || !item.maskCanvas) return;
+            const snap = document.createElement('canvas');
+            snap.width = item.maskCanvas.width;
+            snap.height = item.maskCanvas.height;
+            snap.getContext('2d').drawImage(item.maskCanvas, 0, 0);
+            item.undoStack.push(snap);
+            if (item.undoStack.length > 8) {
+                item.undoStack.shift();
+            }
+            updateButtonStates();
+        }
+
+        function undoLastStroke() {
             const item = imageQueue[currentIndex];
-            if (!item.origMaskCanvas || !item.maskCanvas) return;
+            if (!item || !item.maskCanvas || !item.undoStack || item.undoStack.length === 0) return;
+            const prev = item.undoStack.pop();
             const mCtx = item.maskCanvas.getContext('2d');
             mCtx.clearRect(0, 0, item.maskCanvas.width, item.maskCanvas.height);
-            mCtx.drawImage(item.origMaskCanvas, 0, 0);
+            mCtx.drawImage(prev, 0, 0);
+            renderCurrentImage();
+        }
+
+        btnUndoMask.addEventListener('click', undoLastStroke);
+
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+                const item = imageQueue[currentIndex];
+                if (item && item.undoStack && item.undoStack.length > 0) {
+                    e.preventDefault();
+                    undoLastStroke();
+                }
+            }
+        });
+
+        btnResetMask.addEventListener('click', async () => {
+            const item = imageQueue[currentIndex];
+            if (!item || !item.maskBlob || !item.maskCanvas) return;
+            saveUndoSnapshot(item);
+            item.maskCanvas = await buildFullResMaskCanvas(item.originalImg, item.maskBlob);
             renderCurrentImage();
         });
 
         // Brush Event Handlers (Mouse & Touch)
+        canvas.addEventListener('contextmenu', (e) => {
+            if (isBrushActive) e.preventDefault();
+        });
         canvas.addEventListener('mouseenter', () => {
             if (isBrushActive) brushCursor.style.display = 'block';
         });
         canvas.addEventListener('mouseleave', () => {
             brushCursor.style.display = 'none';
             isPainting = false;
+            lastPaintPoint = null;
         });
-        window.addEventListener('mouseup', () => isPainting = false);
+        window.addEventListener('mouseup', () => {
+            isPainting = false;
+            lastPaintPoint = null;
+        });
 
         canvas.addEventListener('mousemove', (e) => {
             if (!isBrushActive) return;
@@ -678,20 +987,28 @@
             updateBrushCursor();
 
             if (isPainting && currentIndex !== -1) {
-                applyBrushStroke(e.clientX, e.clientY, e.shiftKey || e.button === 2);
+                const isRightHeld = (e.buttons & 2) !== 0;
+                applyBrushStroke(e.clientX, e.clientY, e.shiftKey || isRightHeld);
             }
         });
 
         canvas.addEventListener('mousedown', (e) => {
             if (!isBrushActive || currentIndex === -1) return;
+            const item = imageQueue[currentIndex];
+            if (!item || item.status !== 'done' || !item.maskCanvas) return;
+            saveUndoSnapshot(item);
             isPainting = true;
+            lastPaintPoint = null;
             applyBrushStroke(e.clientX, e.clientY, e.shiftKey || e.button === 2);
         });
 
-        // Touch events
         canvas.addEventListener('touchstart', (e) => {
             if (!isBrushActive || currentIndex === -1 || e.touches.length === 0) return;
+            const item = imageQueue[currentIndex];
+            if (!item || item.status !== 'done' || !item.maskCanvas) return;
+            saveUndoSnapshot(item);
             isPainting = true;
+            lastPaintPoint = null;
             const touch = e.touches[0];
             const wrapRect = canvasWrap.getBoundingClientRect();
             brushCursor.style.display = 'block';
@@ -714,6 +1031,7 @@
 
         canvas.addEventListener('touchend', () => {
             isPainting = false;
+            lastPaintPoint = null;
             brushCursor.style.display = 'none';
         });
 
@@ -730,29 +1048,36 @@
             const mCtx = item.maskCanvas.getContext('2d');
             const shouldRestore = isRestoreModifier || brushMode === 'restore';
 
+            const prev = lastPaintPoint || { x, y };
+            const dist = Math.hypot(x - prev.x, y - prev.y);
+            const step = Math.max(1, brushRadius * 0.25);
+            const steps = Math.max(1, Math.ceil(dist / step));
+
+            mCtx.save();
+            mCtx.beginPath();
+            for (let s = 0; s <= steps; s++) {
+                const t = s / steps;
+                const ix = prev.x + (x - prev.x) * t;
+                const iy = prev.y + (y - prev.y) * t;
+                mCtx.moveTo(ix + brushRadius, iy);
+                mCtx.arc(ix, iy, brushRadius, 0, Math.PI * 2);
+            }
+
             if (shouldRestore) {
-                // Restore original image pixels at circle
-                mCtx.save();
-                mCtx.beginPath();
-                mCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
                 mCtx.clip();
                 mCtx.globalCompositeOperation = 'source-over';
                 mCtx.drawImage(item.originalImg, 0, 0);
-                mCtx.restore();
             } else {
-                // Erase background pixels
-                mCtx.save();
-                mCtx.beginPath();
-                mCtx.arc(x, y, brushRadius, 0, Math.PI * 2);
                 mCtx.globalCompositeOperation = 'destination-out';
                 mCtx.fill();
-                mCtx.restore();
             }
+            mCtx.restore();
 
+            lastPaintPoint = { x, y };
             renderCurrentImage();
         }
 
-        // Background type changes
+        // Background Controls
         bgType.addEventListener('change', () => {
             colorGroup.classList.add('hidden');
             customBgGroup.classList.add('hidden');
@@ -792,8 +1117,12 @@
             if (!items) return;
             const files = [];
             for (const item of items) {
-                if (item.type.startsWith('image/')) {
-                    files.push(item.getAsFile());
+                if (item.type && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    if (blob) {
+                        const file = new File([blob], `pegado_${pasteCounter++}.png`, { type: blob.type });
+                        files.push(file);
+                    }
                 }
             }
             if (files.length > 0) addFilesToQueue(files);
@@ -802,7 +1131,7 @@
         window.addEventListener('dragover', (e) => e.preventDefault());
         window.addEventListener('drop', (e) => {
             e.preventDefault();
-            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            const files = Array.from(e.dataTransfer.files).filter(f => f && f.type && f.type.startsWith('image/'));
             if (files.length > 0) addFilesToQueue(files);
         });
 
@@ -817,12 +1146,14 @@
                 exportCanvas.height = h;
                 const eCtx = exportCanvas.getContext('2d');
 
-                // Render Background
-                if (mimeType === 'image/jpeg' && bgType.value === 'transparent') {
-                    // JPEG does not support transparency: fill with white to avoid black background
+                // Base white layer if JPEG (since JPEG has no transparency)
+                if (mimeType === 'image/jpeg') {
                     eCtx.fillStyle = '#ffffff';
                     eCtx.fillRect(0, 0, w, h);
-                } else if (bgType.value === 'color') {
+                }
+
+                // Render Selected Background
+                if (bgType.value === 'color') {
                     eCtx.fillStyle = bgColor.value;
                     eCtx.fillRect(0, 0, w, h);
                 } else if (bgType.value === 'image' && customBgImage) {
@@ -831,9 +1162,10 @@
                     const sh = customBgImage.height * scale;
                     eCtx.drawImage(customBgImage, (w - sw) / 2, (h - sh) / 2, sw, sh);
                 } else if (bgType.value === 'blur') {
+                    const scaledBlur = Math.max(2, Math.round(parseInt(blurAmount.value, 10) * (Math.max(w, h) / 1000)));
                     eCtx.save();
-                    eCtx.filter = `blur(${blurAmount.value}px)`;
-                    eCtx.drawImage(item.originalImg, -20, -20, w + 40, h + 40);
+                    eCtx.filter = `blur(${scaledBlur}px)`;
+                    eCtx.drawImage(item.originalImg, 0, 0, w, h);
                     eCtx.restore();
                 }
 
@@ -846,9 +1178,10 @@
         // Action Buttons:
         // 1. Copiar al Portapapeles
         copyBtn.addEventListener('click', async () => {
-            if (currentIndex === -1 || !imageQueue[currentIndex]) return;
+            const item = imageQueue[currentIndex];
+            if (!item || item.status !== 'done' || !item.maskCanvas) return;
             try {
-                const blob = await getExportBlob(imageQueue[currentIndex], 'image/png');
+                const blob = await getExportBlob(item, 'image/png');
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                 const originalText = copyBtn.textContent;
                 copyBtn.textContent = '¡Copiado!';
@@ -861,8 +1194,8 @@
 
         // 2. Descargar Imagen
         downloadSingleBtn.addEventListener('click', async () => {
-            if (currentIndex === -1 || !imageQueue[currentIndex]) return;
             const item = imageQueue[currentIndex];
+            if (!item || item.status !== 'done' || !item.maskCanvas) return;
             const mime = exportFormat.value;
             let ext = 'png';
             if (mime === 'image/jpeg') ext = 'jpg';
@@ -920,20 +1253,25 @@
 
         // 5. Limpiar Todo
         clearAllBtn.addEventListener('click', () => {
+            queueGeneration++;
+            activeWorkers = 0;
+            imageQueue.forEach(item => {
+                if (item.objUrl) URL.revokeObjectURL(item.objUrl);
+            });
             imageQueue = [];
             currentIndex = -1;
-            isProcessing = false;
             imgInput.value = '';
             brushToggle.checked = false;
+            isBrushActive = false;
             brushControls.classList.add('hidden');
             brushCursor.style.display = 'none';
             canvas.style.cursor = 'default';
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             canvas.width = 0;
             canvas.height = 0;
-            statusLabel.textContent = 'Listo para procesar';
-            updateButtonStates();
             renderGallery();
+            updateButtonStates();
+            updateGlobalStatus();
         });
     </script>
 </body>
