@@ -291,14 +291,14 @@
     </div>
 
     <div class="paste-notice">
-        📌 <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) para pegar imágenes desde el portapapeles.
+        <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) para pegar imágenes o GIFs animados desde el portapapeles.
     </div>
 
     <div class="container">
         <div class="controls">
             <div class="control-group">
-                <label for="imgInput">Seleccionar Imágenes:</label>
-                <input type="file" id="imgInput" accept="image/*" multiple>
+                <label for="imgInput">Seleccionar Imágenes o GIFs:</label>
+                <input type="file" id="imgInput" accept="image/*,.gif" multiple>
             </div>
 
             <div class="status-box">
@@ -356,6 +356,7 @@
                 <label for="exportFormat">Formato de Descarga:</label>
                 <select id="exportFormat">
                     <option value="image/png">PNG (.png)</option>
+                    <option value="image/gif">GIF (.gif — Mantiene animación)</option>
                     <option value="image/jpeg">JPEG (.jpg)</option>
                     <option value="image/webp">WEBP (.webp)</option>
                 </select>
@@ -386,7 +387,6 @@
     <script type="module">
         import { preload, removeBackground } from 'https://esm.sh/@imgly/background-removal@1.4.5';
 
-        // DOM Elements
         const imgInput = document.getElementById('imgInput');
         const statusLabel = document.getElementById('statusLabel');
         const statusProgressWrap = document.getElementById('statusProgressWrap');
@@ -429,11 +429,11 @@
         canvas.style.maxHeight = '100%';
         canvas.style.objectFit = 'contain';
 
-        // Batch Queue & Concurrency State
-        const MAX_CONCURRENCY = 3; // Procesa hasta 3 imágenes simultáneamente
-        const AI_MAX_DIM = 1024;   // El modelo ISNet opera internamente a 1024x1024
+        const MAX_CONCURRENCY = 3;
+        const AI_MAX_DIM = 1024;
+        const AI_GIF_MAX_DIM = 512; // Más rápido por fotograma en GIFs animados
 
-        let imageQueue = []; // { id, name, originalFile, originalImg, maskCanvas, maskBlob, undoStack, status }
+        let imageQueue = [];
         let currentIndex = -1;
         let activeWorkers = 0;
         let queueGeneration = 0;
@@ -446,14 +446,18 @@
         let isPainting = false;
         let lastPaintPoint = null;
 
-        // AI Preload & Progress Tracking
+        // Animated GIF Playback Timer
+        let animTimer = null;
+        let currentFrameIdx = 0;
+
+        // AI Preload & Progress
         let aiReady = false;
         let aiPreloadPromise = null;
         let downloadProgressMap = new Map();
         let lastDownloadPct = 0;
 
         const AI_CONFIG = {
-            model: 'small', // Modelo cuantizado de 8 bits (44 MB): 2.5x más rápido en CPU y mitad de descarga que 'medium'
+            model: 'small',
             output: { format: 'image/png', quality: 1 },
             progress: (key, current, total) => {
                 if (key && key.startsWith('fetch:') && total > 0) {
@@ -481,10 +485,417 @@
             return aiPreloadPromise;
         }
 
-        // Start preloading AI in the background immediately when page opens
         window.addEventListener('DOMContentLoaded', () => {
             ensureAIReady();
         });
+
+        // ==========================================
+        // DECODIFICADOR Y CODIFICADOR DE GIF ANIMADO
+        // ==========================================
+
+        // Pure-JS GIF89a Frame Decoder fallback
+        function decodeGifBinary(buffer) {
+            const bytes = new Uint8Array(buffer);
+            if (bytes.length < 13) return null;
+            const header = String.fromCharCode(bytes[0], bytes[1], bytes[2]);
+            if (header !== 'GIF') return null;
+
+            const width = bytes[6] | (bytes[7] << 8);
+            const height = bytes[8] | (bytes[9] << 8);
+            const packed = bytes[10];
+            let pos = 13;
+
+            let gct = null;
+            if (packed & 0x80) {
+                const gctSize = 1 << ((packed & 0x07) + 1);
+                gct = bytes.subarray(pos, pos + gctSize * 3);
+                pos += gctSize * 3;
+            }
+
+            const frames = [];
+            const accumCanvas = document.createElement('canvas');
+            accumCanvas.width = width;
+            accumCanvas.height = height;
+            const accumCtx = accumCanvas.getContext('2d');
+
+            let delayMs = 100;
+            let disposal = 0;
+            let transIndex = -1;
+
+            while (pos < bytes.length) {
+                const blockId = bytes[pos++];
+                if (blockId === 0x3B) break; // Trailer
+
+                if (blockId === 0x21) { // Extension
+                    const extLabel = bytes[pos++];
+                    if (extLabel === 0xF9) { // Graphic Control Extension
+                        const blockSize = bytes[pos++];
+                        const gcePacked = bytes[pos];
+                        disposal = (gcePacked >> 2) & 0x07;
+                        const hasTrans = (gcePacked & 0x01) !== 0;
+                        const delayCs = bytes[pos + 1] | (bytes[pos + 2] << 8);
+                        delayMs = Math.max(20, (delayCs || 10) * 10);
+                        transIndex = hasTrans ? bytes[pos + 3] : -1;
+                        pos += blockSize + 1;
+                    } else {
+                        while (pos < bytes.length) {
+                            const subLen = bytes[pos++];
+                            if (subLen === 0) break;
+                            pos += subLen;
+                        }
+                    }
+                } else if (blockId === 0x2C) { // Image Descriptor
+                    const left = bytes[pos] | (bytes[pos + 1] << 8);
+                    const top = bytes[pos + 2] | (bytes[pos + 3] << 8);
+                    const fw = bytes[pos + 4] | (bytes[pos + 5] << 8);
+                    const fh = bytes[pos + 6] | (bytes[pos + 7] << 8);
+                    const imgPacked = bytes[pos + 8];
+                    pos += 9;
+
+                    let ct = gct;
+                    if (imgPacked & 0x80) {
+                        const lctSize = 1 << ((imgPacked & 0x07) + 1);
+                        ct = bytes.subarray(pos, pos + lctSize * 3);
+                        pos += lctSize * 3;
+                    }
+                    const interlaced = (imgPacked & 0x40) !== 0;
+
+                    const minCodeSize = bytes[pos++];
+                    const lzwBytes = [];
+                    while (pos < bytes.length) {
+                        const subLen = bytes[pos++];
+                        if (subLen === 0) break;
+                        for (let i = 0; i < subLen; i++) lzwBytes.push(bytes[pos++]);
+                    }
+
+                    // LZW Decode
+                    const clearCode = 1 << minCodeSize;
+                    const eoiCode = clearCode + 1;
+                    let codeSize = minCodeSize + 1;
+                    let nextCode = eoiCode + 1;
+                    let codeMask = (1 << codeSize) - 1;
+
+                    const prefix = new Int32Array(4096);
+                    const suffix = new Uint8Array(4096);
+                    const lengthArr = new Int32Array(4096);
+                    for (let i = 0; i < clearCode; i++) {
+                        prefix[i] = -1;
+                        suffix[i] = i;
+                        lengthArr[i] = 1;
+                    }
+
+                    const pixelCount = fw * fh;
+                    const pixels = new Uint8Array(pixelCount);
+                    let pixelPos = 0;
+                    let bitBuf = 0, bitCnt = 0, byteIdx = 0;
+                    let oldCode = -1, firstChar = 0;
+                    const stack = new Uint8Array(4096);
+
+                    while (byteIdx < lzwBytes.length || bitCnt >= codeSize) {
+                        while (bitCnt < codeSize && byteIdx < lzwBytes.length) {
+                            bitBuf |= lzwBytes[byteIdx++] << bitCnt;
+                            bitCnt += 8;
+                        }
+                        if (bitCnt < codeSize) break;
+                        const code = bitBuf & codeMask;
+                        bitBuf >>= codeSize;
+                        bitCnt -= codeSize;
+
+                        if (code === clearCode) {
+                            codeSize = minCodeSize + 1;
+                            codeMask = (1 << codeSize) - 1;
+                            nextCode = eoiCode + 1;
+                            oldCode = -1;
+                            continue;
+                        }
+                        if (code === eoiCode) break;
+
+                        let inCode = code;
+                        let sp = 0;
+                        if (code >= nextCode) {
+                            stack[sp++] = firstChar;
+                            inCode = oldCode;
+                        }
+                        while (inCode >= clearCode && sp < 4096) {
+                            stack[sp++] = suffix[inCode];
+                            inCode = prefix[inCode];
+                        }
+                        firstChar = suffix[inCode];
+                        stack[sp++] = firstChar;
+
+                        for (let i = sp - 1; i >= 0 && pixelPos < pixelCount; i--) {
+                            pixels[pixelPos++] = stack[i];
+                        }
+
+                        if (oldCode !== -1 && nextCode < 4096) {
+                            prefix[nextCode] = oldCode;
+                            suffix[nextCode] = firstChar;
+                            nextCode++;
+                            if (nextCode === (1 << codeSize) && codeSize < 12) {
+                                codeSize++;
+                                codeMask = (1 << codeSize) - 1;
+                            }
+                        }
+                        oldCode = code;
+                    }
+
+                    let prevSnapshot = null;
+                    if (disposal === 3) {
+                        prevSnapshot = accumCtx.getImageData(0, 0, width, height);
+                    }
+
+                    const frameImgData = accumCtx.getImageData(left, top, fw, fh);
+                    const fd = frameImgData.data;
+
+                    const passStarts = [0, 4, 2, 1];
+                    const passSteps = [8, 8, 4, 2];
+                    let srcRow = 0;
+
+                    const writeRow = (destY) => {
+                        for (let x = 0; x < fw; x++) {
+                            const cIdx = pixels[srcRow * fw + x];
+                            if (cIdx !== transIndex && ct) {
+                                const di = (destY * fw + x) * 4;
+                                fd[di] = ct[cIdx * 3];
+                                fd[di + 1] = ct[cIdx * 3 + 1];
+                                fd[di + 2] = ct[cIdx * 3 + 2];
+                                fd[di + 3] = 255;
+                            }
+                        }
+                        srcRow++;
+                    };
+
+                    if (!interlaced) {
+                        for (let y = 0; y < fh; y++) writeRow(y);
+                    } else {
+                        for (let p = 0; p < 4; p++) {
+                            for (let y = passStarts[p]; y < fh; y += passSteps[p]) writeRow(y);
+                        }
+                    }
+
+                    accumCtx.putImageData(frameImgData, left, top);
+
+                    const frameCanvas = document.createElement('canvas');
+                    frameCanvas.width = width;
+                    frameCanvas.height = height;
+                    frameCanvas.getContext('2d').drawImage(accumCanvas, 0, 0);
+                    frames.push({ canvas: frameCanvas, delayMs });
+
+                    if (disposal === 2) {
+                        accumCtx.clearRect(left, top, fw, fh);
+                    } else if (disposal === 3 && prevSnapshot) {
+                        accumCtx.putImageData(prevSnapshot, 0, 0);
+                    }
+
+                    delayMs = 100;
+                    disposal = 0;
+                    transIndex = -1;
+                } else {
+                    break;
+                }
+            }
+            return frames.length > 1 ? frames : null;
+        }
+
+        async function decodeAnimatedGifIfApplicable(file) {
+            const isGif = (file.type === 'image/gif') || /\.gif$/i.test(file.name || '');
+            if (!isGif) return null;
+
+            const buf = await file.arrayBuffer();
+
+            // 1. Try native ImageDecoder first
+            if ('ImageDecoder' in window) {
+                try {
+                    const decoder = new ImageDecoder({ data: buf.slice(0), type: 'image/gif' });
+                    await decoder.tracks.ready;
+                    const track = decoder.tracks.selectedTrack;
+                    const count = track.frameCount;
+                    if (count > 1) {
+                        const frames = [];
+                        for (let i = 0; i < count; i++) {
+                            const { image } = await decoder.decode({ frameIndex: i });
+                            const c = document.createElement('canvas');
+                            c.width = image.displayWidth;
+                            c.height = image.displayHeight;
+                            c.getContext('2d').drawImage(image, 0, 0);
+                            const delayMs = image.duration ? Math.max(20, Math.round(image.duration / 1000)) : 100;
+                            image.close();
+                            frames.push({ canvas: c, delayMs });
+                        }
+                        decoder.close();
+                        return frames;
+                    }
+                    decoder.close();
+                } catch (e) {
+                    console.warn('Usando decodificador GIF binario JS:', e);
+                }
+            }
+
+            // 2. Fallback to pure-JS GIF89a decoder
+            return decodeGifBinary(buf);
+        }
+
+        // Multi-frame GIF89a Encoder with transparency & Floyd-Steinberg dithering
+        function encodeAnimatedGIF(frameItems) {
+            const w = frameItems[0].canvas.width;
+            const h = frameItems[0].canvas.height;
+            const bytes = [];
+            const pushStr = (s) => { for (let i = 0; i < s.length; i++) bytes.push(s.charCodeAt(i)); };
+            const push16 = (v) => { bytes.push(v & 0xFF, (v >> 8) & 0xFF); };
+
+            pushStr('GIF89a');
+            push16(w);
+            push16(h);
+            bytes.push(0xF7, 0xFF, 0x00);
+
+            for (let r = 0; r < 6; r++) {
+                for (let g = 0; g < 6; g++) {
+                    for (let b = 0; b < 6; b++) {
+                        bytes.push(r * 51, g * 51, b * 51);
+                    }
+                }
+            }
+            for (let i = 0; i < 39; i++) {
+                const v = Math.round((i / 38) * 255);
+                bytes.push(v, v, v);
+            }
+            bytes.push(0, 0, 0); // 255 = transparent
+
+            if (frameItems.length > 1) {
+                bytes.push(0x21, 0xFF, 0x0B);
+                pushStr('NETSCAPE2.0');
+                bytes.push(0x03, 0x01, 0x00, 0x00, 0x00);
+            }
+
+            const totalPixels = w * h;
+            const dict = new Int32Array(4096 * 256);
+
+            for (const fItem of frameItems) {
+                const c = fItem.canvas;
+                const delayCs = Math.max(2, Math.round((fItem.delayMs || 100) / 10));
+                const imgData = c.getContext('2d').getImageData(0, 0, w, h).data;
+
+                const rBuf = new Float32Array(totalPixels);
+                const gBuf = new Float32Array(totalPixels);
+                const bBuf = new Float32Array(totalPixels);
+                for (let i = 0; i < totalPixels; i++) {
+                    const p = i * 4;
+                    rBuf[i] = imgData[p];
+                    gBuf[i] = imgData[p + 1];
+                    bBuf[i] = imgData[p + 2];
+                }
+
+                const indices = new Uint8Array(totalPixels);
+                let hasTransparent = false;
+
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const i = y * w + x;
+                        if (imgData[i * 4 + 3] < 128) {
+                            indices[i] = 255;
+                            hasTransparent = true;
+                            continue;
+                        }
+                        const oldR = Math.max(0, Math.min(255, rBuf[i]));
+                        const oldG = Math.max(0, Math.min(255, gBuf[i]));
+                        const oldB = Math.max(0, Math.min(255, bBuf[i]));
+
+                        const qr = Math.round(oldR / 51);
+                        const qg = Math.round(oldG / 51);
+                        const qb = Math.round(oldB / 51);
+                        indices[i] = qr * 36 + qg * 6 + qb;
+
+                        const errR = oldR - qr * 51;
+                        const errG = oldG - qg * 51;
+                        const errB = oldB - qb * 51;
+                        if (x + 1 < w) {
+                            const ni = i + 1;
+                            rBuf[ni] += errR * 0.4375; gBuf[ni] += errG * 0.4375; bBuf[ni] += errB * 0.4375;
+                        }
+                        if (y + 1 < h) {
+                            if (x > 0) {
+                                const ni = i + w - 1;
+                                rBuf[ni] += errR * 0.1875; gBuf[ni] += errG * 0.1875; bBuf[ni] += errB * 0.1875;
+                            }
+                            const ni2 = i + w;
+                            rBuf[ni2] += errR * 0.3125; gBuf[ni2] += errG * 0.3125; bBuf[ni2] += errB * 0.3125;
+                            if (x + 1 < w) {
+                                const ni3 = i + w + 1;
+                                rBuf[ni3] += errR * 0.0625; gBuf[ni3] += errG * 0.0625; bBuf[ni3] += errB * 0.0625;
+                            }
+                        }
+                    }
+                }
+
+                const gceFlags = (2 << 2) | (hasTransparent ? 1 : 0);
+                bytes.push(0x21, 0xF9, 0x04, gceFlags);
+                push16(delayCs);
+                bytes.push(255, 0x00);
+
+                bytes.push(0x2C);
+                push16(0); push16(0);
+                push16(w); push16(h);
+                bytes.push(0x00);
+
+                bytes.push(8);
+                const clearCode = 256;
+                const eoiCode = 257;
+                let codeSize = 9;
+                let nextCode = 258;
+                dict.fill(-1);
+
+                let bitBuffer = 0;
+                let bitCount = 0;
+                let subBlock = [];
+
+                const emitCode = (code) => {
+                    bitBuffer |= (code << bitCount);
+                    bitCount += codeSize;
+                    while (bitCount >= 8) {
+                        subBlock.push(bitBuffer & 0xFF);
+                        bitBuffer >>= 8;
+                        bitCount -= 8;
+                        if (subBlock.length === 255) {
+                            bytes.push(255, ...subBlock);
+                            subBlock = [];
+                        }
+                    }
+                };
+
+                emitCode(clearCode);
+                let prefix = indices[0];
+                for (let i = 1; i < totalPixels; i++) {
+                    const k = indices[i];
+                    const dictIdx = (prefix << 8) + k;
+                    if (dict[dictIdx] !== -1) {
+                        prefix = dict[dictIdx];
+                    } else {
+                        emitCode(prefix);
+                        if (nextCode < 4096) {
+                            dict[dictIdx] = nextCode++;
+                            if (nextCode > (1 << codeSize) && codeSize < 12) {
+                                codeSize++;
+                            }
+                        } else {
+                            emitCode(clearCode);
+                            dict.fill(-1);
+                            nextCode = 258;
+                            codeSize = 9;
+                        }
+                        prefix = k;
+                    }
+                }
+                emitCode(prefix);
+                emitCode(eoiCode);
+
+                if (bitCount > 0) subBlock.push(bitBuffer & 0xFF);
+                if (subBlock.length > 0) bytes.push(subBlock.length, ...subBlock);
+                bytes.push(0x00);
+            }
+
+            bytes.push(0x3B);
+            return new Blob([new Uint8Array(bytes)], { type: 'image/gif' });
+        }
 
         // Update status bar & canvas loader overlay
         function updateGlobalStatus() {
@@ -502,11 +913,19 @@
             const finishedCount = doneCount + errorCount;
             const inProgressCount = imageQueue.filter(i => i.status === 'processing' || i.status === 'pending').length;
 
+            const currentItem = imageQueue[currentIndex];
+
             if (inProgressCount > 0) {
                 statusProgressWrap.classList.remove('hidden');
                 if (!aiReady && lastDownloadPct > 0 && lastDownloadPct < 99) {
                     statusLabel.innerHTML = `<span class="spinner-dark"></span>Descargando IA (1ª vez): ${lastDownloadPct}% (${finishedCount}/${total} listas)`;
                     statusProgressBar.style.width = `${lastDownloadPct}%`;
+                } else if (currentItem && currentItem.isAnimated && currentItem.status === 'processing') {
+                    const fDone = currentItem.framesProcessed || 0;
+                    const fTot = currentItem.frames.length;
+                    const pct = Math.max(8, Math.round((fDone / fTot) * 100));
+                    statusLabel.innerHTML = `<span class="spinner-dark"></span>Quitando fondo al GIF (${fDone}/${fTot} fotogramas)...`;
+                    statusProgressBar.style.width = `${pct}%`;
                 } else {
                     const pct = Math.max(10, Math.round((finishedCount / total) * 100));
                     statusLabel.innerHTML = `<span class="spinner-dark"></span>Quitando fondo (${finishedCount}/${total} listas, ${activeWorkers} en paralelo)...`;
@@ -518,18 +937,18 @@
                 if (errorCount > 0 && doneCount === 0) {
                     statusLabel.textContent = `Error al procesar (${errorCount} fallidas)`;
                 } else if (errorCount > 0) {
-                    statusLabel.textContent = `¡Completado! (${doneCount} listas, ${errorCount} con error)`;
+                    statusLabel.textContent = `Completado (${doneCount} listas, ${errorCount} con error)`;
                 } else {
-                    statusLabel.textContent = `¡Completado! (${doneCount} ${doneCount === 1 ? 'imagen procesada' : 'imágenes procesadas'})`;
+                    statusLabel.textContent = `Completado (${doneCount} ${doneCount === 1 ? 'archivo procesado' : 'archivos procesados'})`;
                 }
             }
 
-            // Update main canvas loader overlay for the currently selected image
-            const currentItem = imageQueue[currentIndex];
             if (currentItem && (currentItem.status === 'pending' || currentItem.status === 'processing')) {
                 canvasLoader.classList.remove('hidden');
                 if (!aiReady && lastDownloadPct > 0 && lastDownloadPct < 99) {
                     canvasLoaderText.textContent = `Descargando motor IA (${lastDownloadPct}%)...`;
+                } else if (currentItem.isAnimated) {
+                    canvasLoaderText.textContent = `Quitando fondo al GIF (${currentItem.framesProcessed || 0}/${currentItem.frames.length} fotogramas)...`;
                 } else {
                     canvasLoaderText.textContent = `Quitando fondo a "${currentItem.name}"...`;
                 }
@@ -538,13 +957,11 @@
             }
         }
 
-        // Scale input image on GPU canvas to max 1024px before feeding into AI
-        // (Avoids slow multi-second JS pixel loops inside @imgly on 4K photos & converts AVIF/BMP/GIF to PNG)
-        function prepareAIInputBlob(img) {
+        function prepareAIInputBlob(sourceImgOrCanvas, maxDim = AI_MAX_DIM) {
             return new Promise((resolve) => {
-                const w = img.naturalWidth || img.width;
-                const h = img.naturalHeight || img.height;
-                const scale = Math.min(1, AI_MAX_DIM / Math.max(w, h));
+                const w = sourceImgOrCanvas.naturalWidth || sourceImgOrCanvas.width;
+                const h = sourceImgOrCanvas.naturalHeight || sourceImgOrCanvas.height;
+                const scale = Math.min(1, maxDim / Math.max(w, h));
                 const targetW = Math.max(1, Math.round(w * scale));
                 const targetH = Math.max(1, Math.round(h * scale));
 
@@ -552,15 +969,14 @@
                 c.width = targetW;
                 c.height = targetH;
                 const tCtx = c.getContext('2d');
-                tCtx.drawImage(img, 0, 0, targetW, targetH);
+                tCtx.drawImage(sourceImgOrCanvas, 0, 0, targetW, targetH);
                 c.toBlob(resolve, 'image/png');
             });
         }
 
-        // Apply AI cutout mask onto original full-resolution image (100% lossless native pixels)
-        async function buildFullResMaskCanvas(originalImg, cutoutBlob) {
-            const w = originalImg.naturalWidth || originalImg.width;
-            const h = originalImg.naturalHeight || originalImg.height;
+        async function buildFullResMaskCanvas(sourceImgOrCanvas, cutoutBlob) {
+            const w = sourceImgOrCanvas.naturalWidth || sourceImgOrCanvas.width;
+            const h = sourceImgOrCanvas.naturalHeight || sourceImgOrCanvas.height;
 
             const maskCanvas = document.createElement('canvas');
             maskCanvas.width = w;
@@ -569,10 +985,8 @@
             mCtx.imageSmoothingEnabled = true;
             mCtx.imageSmoothingQuality = 'high';
 
-            // 1. Draw original image at 100% native resolution
-            mCtx.drawImage(originalImg, 0, 0, w, h);
+            mCtx.drawImage(sourceImgOrCanvas, 0, 0, w, h);
 
-            // 2. Multiply alpha channel by the smoothly upscaled AI mask
             mCtx.globalCompositeOperation = 'destination-in';
             if (window.createImageBitmap) {
                 const bmp = await createImageBitmap(cutoutBlob);
@@ -592,16 +1006,15 @@
             return maskCanvas;
         }
 
-        // Border flood-fill fallback in case CDN is unreachable/offline
-        function fallbackLocalRemoval(img) {
+        function fallbackLocalRemoval(sourceImgOrCanvas) {
             return new Promise((resolve) => {
                 const c = document.createElement('canvas');
-                const w = img.naturalWidth || img.width;
-                const h = img.naturalHeight || img.height;
+                const w = sourceImgOrCanvas.naturalWidth || sourceImgOrCanvas.width;
+                const h = sourceImgOrCanvas.naturalHeight || sourceImgOrCanvas.height;
                 c.width = w;
                 c.height = h;
                 const tCtx = c.getContext('2d');
-                tCtx.drawImage(img, 0, 0, w, h);
+                tCtx.drawImage(sourceImgOrCanvas, 0, 0, w, h);
                 const data = tCtx.getImageData(0, 0, w, h);
                 const d = data.data;
                 const r = d[0], g = d[1], b = d[2];
@@ -615,12 +1028,14 @@
             });
         }
 
-        // Add files to queue and trigger parallel processing
         async function addFilesToQueue(files) {
             if (!files || files.length === 0) return;
 
             for (const file of files) {
-                if (!file || !file.type || !file.type.startsWith('image/')) continue;
+                if (!file) continue;
+                const isGifFile = (file.type === 'image/gif') || /\.gif$/i.test(file.name || '');
+                if (!isGifFile && (!file.type || !file.type.startsWith('image/'))) continue;
+
                 try {
                     const objUrl = URL.createObjectURL(file);
                     const img = await new Promise((res, rej) => {
@@ -630,18 +1045,33 @@
                         i.src = objUrl;
                     });
 
+                    const gifFrames = await decodeAnimatedGifIfApplicable(file);
+                    const isAnimated = Boolean(gifFrames && gifFrames.length > 1);
+
                     const item = {
                         id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-                        name: file.name || `imagen_${pasteCounter++}.png`,
+                        name: file.name || `imagen_${pasteCounter++}.${isAnimated ? 'gif' : 'png'}`,
                         objUrl: objUrl,
                         originalFile: file,
                         originalImg: img,
+                        isAnimated: isAnimated,
+                        frames: isAnimated ? gifFrames.map(f => ({
+                            origCanvas: f.canvas,
+                            maskCanvas: null,
+                            maskBlob: null,
+                            delayMs: f.delayMs
+                        })) : null,
+                        framesProcessed: 0,
                         maskCanvas: null,
                         maskBlob: null,
                         undoStack: [],
                         status: 'pending'
                     };
                     imageQueue.push(item);
+
+                    if (isAnimated) {
+                        exportFormat.value = 'image/gif';
+                    }
                 } catch (err) {
                     console.error('Error cargando archivo:', err);
                 }
@@ -652,12 +1082,12 @@
             }
 
             renderGallery();
+            manageAnimationLoop();
             renderCurrentImage();
             updateGlobalStatus();
             scheduleQueue();
         }
 
-        // Concurrent Queue Scheduler (processes up to MAX_CONCURRENCY images in parallel)
         function scheduleQueue() {
             const gen = queueGeneration;
             while (activeWorkers < MAX_CONCURRENCY) {
@@ -667,6 +1097,20 @@
             }
         }
 
+        async function removeBgFromSource(sourceEl, maxDim) {
+            const aiInputBlob = await prepareAIInputBlob(sourceEl, maxDim);
+            let blobSinFondo;
+            try {
+                blobSinFondo = await removeBackground(aiInputBlob, AI_CONFIG);
+                aiReady = true;
+            } catch (aiErr) {
+                console.warn('Usando recorte alternativo local:', aiErr);
+                blobSinFondo = await fallbackLocalRemoval(sourceEl);
+            }
+            const maskCanvas = await buildFullResMaskCanvas(sourceEl, blobSinFondo);
+            return { maskCanvas, maskBlob: blobSinFondo };
+        }
+
         async function processSingleItem(item, gen) {
             item.status = 'processing';
             activeWorkers++;
@@ -674,28 +1118,35 @@
             updateGlobalStatus();
 
             try {
-                // Ensure the shared ONNX session is initialized once before parallel runs
                 await ensureAIReady();
                 if (gen !== queueGeneration || !imageQueue.includes(item)) return;
 
-                const aiInputBlob = await prepareAIInputBlob(item.originalImg);
-                if (gen !== queueGeneration || !imageQueue.includes(item)) return;
-
-                let blobSinFondo;
-                try {
-                    blobSinFondo = await removeBackground(aiInputBlob, AI_CONFIG);
-                    aiReady = true;
-                } catch (aiErr) {
-                    console.warn('Usando recorte alternativo local:', aiErr);
-                    blobSinFondo = await fallbackLocalRemoval(item.originalImg);
+                if (item.isAnimated && item.frames) {
+                    item.framesProcessed = 0;
+                    for (let fIdx = 0; fIdx < item.frames.length; fIdx++) {
+                        if (gen !== queueGeneration || !imageQueue.includes(item)) return;
+                        const frame = item.frames[fIdx];
+                        const { maskCanvas, maskBlob } = await removeBgFromSource(frame.origCanvas, AI_GIF_MAX_DIM);
+                        frame.maskCanvas = maskCanvas;
+                        frame.maskBlob = maskBlob;
+                        item.framesProcessed = fIdx + 1;
+                        if (fIdx === 0) {
+                            item.maskCanvas = maskCanvas;
+                            item.maskBlob = maskBlob;
+                        }
+                        updateGalleryBadge(item);
+                        updateGlobalStatus();
+                    }
+                    item.undoStack = [];
+                    item.status = 'done';
+                } else {
+                    const { maskCanvas, maskBlob } = await removeBgFromSource(item.originalImg, AI_MAX_DIM);
+                    if (gen !== queueGeneration || !imageQueue.includes(item)) return;
+                    item.maskBlob = maskBlob;
+                    item.maskCanvas = maskCanvas;
+                    item.undoStack = [];
+                    item.status = 'done';
                 }
-
-                if (gen !== queueGeneration || !imageQueue.includes(item)) return;
-
-                item.maskBlob = blobSinFondo;
-                item.maskCanvas = await buildFullResMaskCanvas(item.originalImg, blobSinFondo);
-                item.undoStack = [];
-                item.status = 'done';
             } catch (err) {
                 console.error('Error procesando imagen:', err);
                 item.status = 'error';
@@ -704,6 +1155,7 @@
                     activeWorkers = Math.max(0, activeWorkers - 1);
                     updateGalleryBadge(item);
                     if (imageQueue[currentIndex] === item) {
+                        manageAnimationLoop();
                         renderCurrentImage();
                     }
                     updateButtonStates();
@@ -713,8 +1165,57 @@
             }
         }
 
-        // Render Current Image
-        function renderCurrentImage() {
+        function manageAnimationLoop() {
+            if (animTimer) {
+                clearTimeout(animTimer);
+                animTimer = null;
+            }
+            const item = imageQueue[currentIndex];
+            if (!item || !item.isAnimated || item.status !== 'done' || !item.frames || item.frames.length <= 1) {
+                currentFrameIdx = 0;
+                return;
+            }
+
+            const tick = () => {
+                const cur = imageQueue[currentIndex];
+                if (!cur || !cur.isAnimated || cur.status !== 'done') return;
+                currentFrameIdx = (currentFrameIdx + 1) % cur.frames.length;
+                renderCurrentImage(true);
+                const delay = cur.frames[currentFrameIdx]?.delayMs || 100;
+                animTimer = setTimeout(tick, delay);
+            };
+            const initialDelay = item.frames[currentFrameIdx]?.delayMs || 100;
+            animTimer = setTimeout(tick, initialDelay);
+        }
+
+        function renderCompositeOnto(targetCtx, w, h, origSource, maskSource, forceWhiteIfTransparent = false) {
+            targetCtx.clearRect(0, 0, w, h);
+
+            if (forceWhiteIfTransparent) {
+                targetCtx.fillStyle = '#ffffff';
+                targetCtx.fillRect(0, 0, w, h);
+            }
+
+            if (bgType.value === 'color') {
+                targetCtx.fillStyle = bgColor.value;
+                targetCtx.fillRect(0, 0, w, h);
+            } else if (bgType.value === 'image' && customBgImage) {
+                const scale = Math.max(w / customBgImage.width, h / customBgImage.height);
+                const sw = customBgImage.width * scale;
+                const sh = customBgImage.height * scale;
+                targetCtx.drawImage(customBgImage, (w - sw) / 2, (h - sh) / 2, sw, sh);
+            } else if (bgType.value === 'blur') {
+                const scaledBlur = Math.max(2, Math.round(parseInt(blurAmount.value, 10) * (Math.max(w, h) / 1000)));
+                targetCtx.save();
+                targetCtx.filter = `blur(${scaledBlur}px)`;
+                targetCtx.drawImage(origSource, 0, 0, w, h);
+                targetCtx.restore();
+            }
+
+            targetCtx.drawImage(maskSource, 0, 0, w, h);
+        }
+
+        function renderCurrentImage(fromAnimTick = false) {
             if (currentIndex === -1 || !imageQueue[currentIndex]) {
                 canvas.width = 0;
                 canvas.height = 0;
@@ -724,15 +1225,16 @@
             }
 
             const item = imageQueue[currentIndex];
-            const w = item.originalImg.naturalWidth;
-            const h = item.originalImg.naturalHeight;
+            const w = item.originalImg.naturalWidth || item.originalImg.width;
+            const h = item.originalImg.naturalHeight || item.originalImg.height;
 
-            canvas.width = w;
-            canvas.height = h;
-
-            ctx.clearRect(0, 0, w, h);
+            if (canvas.width !== w || canvas.height !== h) {
+                canvas.width = w;
+                canvas.height = h;
+            }
 
             if (item.status !== 'done' || !item.maskCanvas) {
+                ctx.clearRect(0, 0, w, h);
                 ctx.save();
                 ctx.globalAlpha = 0.65;
                 ctx.drawImage(item.originalImg, 0, 0, w, h);
@@ -742,32 +1244,19 @@
                 return;
             }
 
-            // 1. Render Selected Background
-            if (bgType.value === 'transparent') {
-                // Transparente: se ve la cuadrícula CSS
-            } else if (bgType.value === 'color') {
-                ctx.fillStyle = bgColor.value;
-                ctx.fillRect(0, 0, w, h);
-            } else if (bgType.value === 'image' && customBgImage) {
-                const scale = Math.max(w / customBgImage.width, h / customBgImage.height);
-                const sw = customBgImage.width * scale;
-                const sh = customBgImage.height * scale;
-                ctx.drawImage(customBgImage, (w - sw) / 2, (h - sh) / 2, sw, sh);
-            } else if (bgType.value === 'blur') {
-                const scaledBlur = Math.max(2, Math.round(parseInt(blurAmount.value, 10) * (Math.max(w, h) / 1000)));
-                ctx.save();
-                ctx.filter = `blur(${scaledBlur}px)`;
-                ctx.drawImage(item.originalImg, 0, 0, w, h);
-                ctx.restore();
+            if (item.isAnimated && item.frames && item.frames.length > 0) {
+                const f = item.frames[currentFrameIdx % item.frames.length];
+                renderCompositeOnto(ctx, w, h, f.origCanvas, f.maskCanvas || f.origCanvas, false);
+            } else {
+                renderCompositeOnto(ctx, w, h, item.originalImg, item.maskCanvas, false);
             }
 
-            // 2. Render Cutout Subject
-            ctx.drawImage(item.maskCanvas, 0, 0, w, h);
-            updateButtonStates();
-            updateGlobalStatus();
+            if (!fromAnimTick) {
+                updateButtonStates();
+                updateGlobalStatus();
+            }
         }
 
-        // Gallery Rendering
         function renderGallery() {
             gallery.innerHTML = '';
             imageQueue.forEach((item, index) => {
@@ -784,13 +1273,16 @@
 
                 thumb.addEventListener('click', () => {
                     currentIndex = imageQueue.indexOf(item);
+                    currentFrameIdx = 0;
+                    if (item.isAnimated) exportFormat.value = 'image/gif';
                     updateActiveThumbnail();
+                    manageAnimationLoop();
                     renderCurrentImage();
                 });
 
                 const badge = document.createElement('div');
                 badge.className = 'thumb-badge';
-                applyBadgeState(badge, thumb, item.status);
+                applyBadgeState(badge, thumb, item);
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-thumb-btn';
@@ -808,15 +1300,18 @@
             });
         }
 
-        function applyBadgeState(badge, thumb, status) {
+        function applyBadgeState(badge, thumb, item) {
+            const status = item.status;
+            const prefix = item.isAnimated ? 'GIF ' : '';
             badge.className = 'thumb-badge';
             if (status === 'pending' || status === 'processing') {
                 thumb.classList.add('is-loading');
-                badge.innerHTML = '<span class="spinner" style="width:10px;height:10px;border-width:2px;"></span>';
+                const progressTxt = item.isAnimated ? `${item.framesProcessed || 0}/${item.frames.length}` : '';
+                badge.innerHTML = `<span class="spinner" style="width:10px;height:10px;border-width:2px;"></span>${progressTxt}`;
             } else if (status === 'done') {
                 thumb.classList.remove('is-loading');
                 badge.classList.add('done');
-                badge.textContent = '✓';
+                badge.textContent = prefix + 'OK';
             } else if (status === 'error') {
                 thumb.classList.remove('is-loading');
                 badge.classList.add('error');
@@ -830,7 +1325,7 @@
             const thumb = wrap.querySelector('img');
             const badge = wrap.querySelector('.thumb-badge');
             if (thumb && badge) {
-                applyBadgeState(badge, thumb, item.status);
+                applyBadgeState(badge, thumb, item);
             }
         }
 
@@ -873,6 +1368,7 @@
                 currentIndex = imageQueue.length - 1;
             }
             renderGallery();
+            manageAnimationLoop();
             renderCurrentImage();
             updateGlobalStatus();
         }
@@ -921,12 +1417,23 @@
 
         function saveUndoSnapshot(item) {
             if (!item || !item.maskCanvas) return;
-            const snap = document.createElement('canvas');
-            snap.width = item.maskCanvas.width;
-            snap.height = item.maskCanvas.height;
-            snap.getContext('2d').drawImage(item.maskCanvas, 0, 0);
-            item.undoStack.push(snap);
-            if (item.undoStack.length > 8) {
+            if (item.isAnimated && item.frames) {
+                const snaps = item.frames.map(f => {
+                    const sc = document.createElement('canvas');
+                    sc.width = f.maskCanvas.width;
+                    sc.height = f.maskCanvas.height;
+                    sc.getContext('2d').drawImage(f.maskCanvas, 0, 0);
+                    return sc;
+                });
+                item.undoStack.push(snaps);
+            } else {
+                const snap = document.createElement('canvas');
+                snap.width = item.maskCanvas.width;
+                snap.height = item.maskCanvas.height;
+                snap.getContext('2d').drawImage(item.maskCanvas, 0, 0);
+                item.undoStack.push(snap);
+            }
+            if (item.undoStack.length > 6) {
                 item.undoStack.shift();
             }
             updateButtonStates();
@@ -936,9 +1443,19 @@
             const item = imageQueue[currentIndex];
             if (!item || !item.maskCanvas || !item.undoStack || item.undoStack.length === 0) return;
             const prev = item.undoStack.pop();
-            const mCtx = item.maskCanvas.getContext('2d');
-            mCtx.clearRect(0, 0, item.maskCanvas.width, item.maskCanvas.height);
-            mCtx.drawImage(prev, 0, 0);
+            if (item.isAnimated && Array.isArray(prev)) {
+                item.frames.forEach((f, idx) => {
+                    if (prev[idx]) {
+                        const mCtx = f.maskCanvas.getContext('2d');
+                        mCtx.clearRect(0, 0, f.maskCanvas.width, f.maskCanvas.height);
+                        mCtx.drawImage(prev[idx], 0, 0);
+                    }
+                });
+            } else {
+                const mCtx = item.maskCanvas.getContext('2d');
+                mCtx.clearRect(0, 0, item.maskCanvas.width, item.maskCanvas.height);
+                mCtx.drawImage(prev, 0, 0);
+            }
             renderCurrentImage();
         }
 
@@ -956,13 +1473,22 @@
 
         btnResetMask.addEventListener('click', async () => {
             const item = imageQueue[currentIndex];
-            if (!item || !item.maskBlob || !item.maskCanvas) return;
+            if (!item || !item.maskCanvas) return;
             saveUndoSnapshot(item);
-            item.maskCanvas = await buildFullResMaskCanvas(item.originalImg, item.maskBlob);
+            if (item.isAnimated && item.frames) {
+                for (const f of item.frames) {
+                    if (f.maskBlob) {
+                        f.maskCanvas = await buildFullResMaskCanvas(f.origCanvas, f.maskBlob);
+                    }
+                }
+                item.maskCanvas = item.frames[0].maskCanvas;
+            } else if (item.maskBlob) {
+                item.maskCanvas = await buildFullResMaskCanvas(item.originalImg, item.maskBlob);
+            }
             renderCurrentImage();
         });
 
-        // Brush Event Handlers (Mouse & Touch)
+        // Brush Event Handlers
         canvas.addEventListener('contextmenu', (e) => {
             if (isBrushActive) e.preventDefault();
         });
@@ -1035,20 +1561,8 @@
             brushCursor.style.display = 'none';
         });
 
-        function applyBrushStroke(clientX, clientY, isRestoreModifier) {
-            const item = imageQueue[currentIndex];
-            if (!item || !item.maskCanvas) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const x = (clientX - rect.left) * scaleX;
-            const y = (clientY - rect.top) * scaleY;
-
-            const mCtx = item.maskCanvas.getContext('2d');
-            const shouldRestore = isRestoreModifier || brushMode === 'restore';
-
-            const prev = lastPaintPoint || { x, y };
+        function paintStrokeOnMask(maskCanvas, origSource, prev, x, y, shouldRestore) {
+            const mCtx = maskCanvas.getContext('2d');
             const dist = Math.hypot(x - prev.x, y - prev.y);
             const step = Math.max(1, brushRadius * 0.25);
             const steps = Math.max(1, Math.ceil(dist / step));
@@ -1066,12 +1580,35 @@
             if (shouldRestore) {
                 mCtx.clip();
                 mCtx.globalCompositeOperation = 'source-over';
-                mCtx.drawImage(item.originalImg, 0, 0);
+                mCtx.drawImage(origSource, 0, 0);
             } else {
                 mCtx.globalCompositeOperation = 'destination-out';
                 mCtx.fill();
             }
             mCtx.restore();
+        }
+
+        function applyBrushStroke(clientX, clientY, isRestoreModifier) {
+            const item = imageQueue[currentIndex];
+            if (!item || !item.maskCanvas) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (clientX - rect.left) * scaleX;
+            const y = (clientY - rect.top) * scaleY;
+            const prev = lastPaintPoint || { x, y };
+            const shouldRestore = isRestoreModifier || brushMode === 'restore';
+
+            if (item.isAnimated && item.frames) {
+                item.frames.forEach(f => {
+                    if (f.maskCanvas) {
+                        paintStrokeOnMask(f.maskCanvas, f.origCanvas, prev, x, y, shouldRestore);
+                    }
+                });
+            } else {
+                paintStrokeOnMask(item.maskCanvas, item.originalImg, prev, x, y, shouldRestore);
+            }
 
             lastPaintPoint = { x, y };
             renderCurrentImage();
@@ -1120,7 +1657,8 @@
                 if (item.type && item.type.startsWith('image/')) {
                     const blob = item.getAsFile();
                     if (blob) {
-                        const file = new File([blob], `pegado_${pasteCounter++}.png`, { type: blob.type });
+                        const ext = blob.type === 'image/gif' ? 'gif' : 'png';
+                        const file = new File([blob], `pegado_${pasteCounter++}.${ext}`, { type: blob.type });
                         files.push(file);
                     }
                 }
@@ -1131,7 +1669,7 @@
         window.addEventListener('dragover', (e) => e.preventDefault());
         window.addEventListener('drop', (e) => {
             e.preventDefault();
-            const files = Array.from(e.dataTransfer.files).filter(f => f && f.type && f.type.startsWith('image/'));
+            const files = Array.from(e.dataTransfer.files).filter(f => f && ((f.type && f.type.startsWith('image/')) || /\.gif$/i.test(f.name || '')));
             if (files.length > 0) addFilesToQueue(files);
         });
 
@@ -1139,44 +1677,49 @@
         function getExportBlob(item, mimeOverride) {
             return new Promise((resolve) => {
                 const mimeType = mimeOverride || exportFormat.value;
-                const w = item.originalImg.naturalWidth;
-                const h = item.originalImg.naturalHeight;
+                const w = item.originalImg.naturalWidth || item.originalImg.width;
+                const h = item.originalImg.naturalHeight || item.originalImg.height;
+
+                // If exporting as GIF (or item is an animated GIF and no override was forced)
+                if (mimeType === 'image/gif') {
+                    if (item.isAnimated && item.frames && item.frames.length > 1) {
+                        const composedFrames = item.frames.map(f => {
+                            const c = document.createElement('canvas');
+                            c.width = w;
+                            c.height = h;
+                            renderCompositeOnto(c.getContext('2d'), w, h, f.origCanvas, f.maskCanvas || f.origCanvas, false);
+                            return { canvas: c, delayMs: f.delayMs };
+                        });
+                        resolve(encodeAnimatedGIF(composedFrames));
+                        return;
+                    } else {
+                        const c = document.createElement('canvas');
+                        c.width = w;
+                        c.height = h;
+                        renderCompositeOnto(c.getContext('2d'), w, h, item.originalImg, item.maskCanvas, false);
+                        resolve(encodeAnimatedGIF([{ canvas: c, delayMs: 100 }]));
+                        return;
+                    }
+                }
+
                 const exportCanvas = document.createElement('canvas');
                 exportCanvas.width = w;
                 exportCanvas.height = h;
                 const eCtx = exportCanvas.getContext('2d');
 
-                // Base white layer if JPEG (since JPEG has no transparency)
-                if (mimeType === 'image/jpeg') {
-                    eCtx.fillStyle = '#ffffff';
-                    eCtx.fillRect(0, 0, w, h);
-                }
+                const activeMask = (item.isAnimated && item.frames)
+                    ? (item.frames[currentFrameIdx % item.frames.length].maskCanvas)
+                    : item.maskCanvas;
+                const activeOrig = (item.isAnimated && item.frames)
+                    ? (item.frames[currentFrameIdx % item.frames.length].origCanvas)
+                    : item.originalImg;
 
-                // Render Selected Background
-                if (bgType.value === 'color') {
-                    eCtx.fillStyle = bgColor.value;
-                    eCtx.fillRect(0, 0, w, h);
-                } else if (bgType.value === 'image' && customBgImage) {
-                    const scale = Math.max(w / customBgImage.width, h / customBgImage.height);
-                    const sw = customBgImage.width * scale;
-                    const sh = customBgImage.height * scale;
-                    eCtx.drawImage(customBgImage, (w - sw) / 2, (h - sh) / 2, sw, sh);
-                } else if (bgType.value === 'blur') {
-                    const scaledBlur = Math.max(2, Math.round(parseInt(blurAmount.value, 10) * (Math.max(w, h) / 1000)));
-                    eCtx.save();
-                    eCtx.filter = `blur(${scaledBlur}px)`;
-                    eCtx.drawImage(item.originalImg, 0, 0, w, h);
-                    eCtx.restore();
-                }
-
-                // Render Cutout Subject
-                eCtx.drawImage(item.maskCanvas, 0, 0, w, h);
+                renderCompositeOnto(eCtx, w, h, activeOrig, activeMask, mimeType === 'image/jpeg');
                 exportCanvas.toBlob(resolve, mimeType, 0.95);
             });
         }
 
-        // Action Buttons:
-        // 1. Copiar al Portapapeles
+        // Action Buttons
         copyBtn.addEventListener('click', async () => {
             const item = imageQueue[currentIndex];
             if (!item || item.status !== 'done' || !item.maskCanvas) return;
@@ -1184,7 +1727,7 @@
                 const blob = await getExportBlob(item, 'image/png');
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                 const originalText = copyBtn.textContent;
-                copyBtn.textContent = '¡Copiado!';
+                copyBtn.textContent = 'Copiado';
                 setTimeout(() => { copyBtn.textContent = originalText; }, 1500);
             } catch (err) {
                 console.error('Error al copiar al portapapeles:', err);
@@ -1192,16 +1735,16 @@
             }
         });
 
-        // 2. Descargar Imagen
         downloadSingleBtn.addEventListener('click', async () => {
             const item = imageQueue[currentIndex];
             if (!item || item.status !== 'done' || !item.maskCanvas) return;
-            const mime = exportFormat.value;
+            const mime = item.isAnimated ? 'image/gif' : exportFormat.value;
             let ext = 'png';
+            if (mime === 'image/gif') ext = 'gif';
             if (mime === 'image/jpeg') ext = 'jpg';
             if (mime === 'image/webp') ext = 'webp';
 
-            const blob = await getExportBlob(item);
+            const blob = await getExportBlob(item, mime);
             const baseName = item.name.replace(/\.[^/.]+$/, "");
             const link = document.createElement('a');
             link.download = `${baseName}_sin_fondo.${ext}`;
@@ -1210,7 +1753,6 @@
             setTimeout(() => URL.revokeObjectURL(link.href), 1000);
         });
 
-        // 3. Descargar Todas (.ZIP)
         downloadZipBtn.addEventListener('click', async () => {
             const readyItems = imageQueue.filter(item => item.status === 'done' && item.maskCanvas);
             if (readyItems.length === 0) return;
@@ -1220,14 +1762,15 @@
             const originalZipText = downloadZipBtn.textContent;
             downloadZipBtn.textContent = 'Generando ZIP...';
 
-            const mime = exportFormat.value;
-            let ext = 'png';
-            if (mime === 'image/jpeg') ext = 'jpg';
-            if (mime === 'image/webp') ext = 'webp';
-
             for (let i = 0; i < readyItems.length; i++) {
                 const item = readyItems[i];
-                const blob = await getExportBlob(item);
+                const mime = item.isAnimated ? 'image/gif' : exportFormat.value;
+                let ext = 'png';
+                if (mime === 'image/gif') ext = 'gif';
+                if (mime === 'image/jpeg') ext = 'jpg';
+                if (mime === 'image/webp') ext = 'webp';
+
+                const blob = await getExportBlob(item, mime);
                 const seq = String(i + 1).padStart(3, '0');
                 const baseName = item.name.replace(/\.[^/.]+$/, "");
                 zip.file(`${seq}_${baseName}.${ext}`, blob);
@@ -1244,17 +1787,19 @@
             downloadZipBtn.textContent = originalZipText;
         });
 
-        // 4. Borrar Imagen Seleccionada
         deleteCurrentBtn.addEventListener('click', () => {
             if (currentIndex !== -1) {
                 removeImageAt(currentIndex);
             }
         });
 
-        // 5. Limpiar Todo
         clearAllBtn.addEventListener('click', () => {
             queueGeneration++;
             activeWorkers = 0;
+            if (animTimer) {
+                clearTimeout(animTimer);
+                animTimer = null;
+            }
             imageQueue.forEach(item => {
                 if (item.objUrl) URL.revokeObjectURL(item.objUrl);
             });
