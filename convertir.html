@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertir Formatos en Lote</title>
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+        .header-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .header-title img {
+            height: 38px;
+            border-radius: 6px;
+        }
+        .header-title h1 {
+            margin: 0;
+        }
+        .paste-notice {
+            background-color: #e9ecef;
+            border: 2px dashed #6c757d;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #495057;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: left;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .special-panel {
+            background: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .special-panel-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #212529;
+            border-bottom: 1px solid #ced4da;
+            padding-bottom: 4px;
+            margin-bottom: 2px;
+        }
+        .quick-btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 2px;
+        }
+        .quick-btn-group button {
+            padding: 4px 8px;
+            font-size: 12px;
+            background-color: #6c757d;
+            flex: 1;
+        }
+        .quick-btn-group button.active-opt {
+            background-color: #007bff;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .preview-area {
+            flex: 2;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .canvas-wrap {
+            position: relative;
+            background-image: 
+                linear-gradient(45deg, #e9ecef 25%, transparent 25%), 
+                linear-gradient(-45deg, #e9ecef 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e9ecef 75%), 
+                linear-gradient(-45deg, transparent 75%, #e9ecef 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 220px;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        .canvas-hint-banner {
+            background: #212529;
+            color: #ffffff;
+            font-size: 13px;
+            padding: 7px 12px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .ico-preview-strip {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 10px;
+            background: #ffffff;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 8px;
+            text-align: center;
+            font-size: 11px;
+            color: #495057;
+        }
+        .ico-preview-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .ico-preview-item canvas {
+            border: 1px dashed #adb5bd;
+            background-image: 
+                linear-gradient(45deg, #e9ecef 25%, transparent 25%), 
+                linear-gradient(-45deg, #e9ecef 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e9ecef 75%), 
+                linear-gradient(-45deg, transparent 75%, #e9ecef 75%);
+            background-size: 8px 8px;
+        }
+        .cursor-test-box {
+            background: #ffffff;
+            border: 2px dashed #007bff;
+            border-radius: 5px;
+            padding: 12px 8px;
+            text-align: center;
+            font-size: 12px;
+            color: #212529;
+            user-select: none;
+        }
+        .cursor-test-target {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 4px 10px;
+            background: #007bff;
+            color: #ffffff;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .gallery {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 10px 0;
+            min-height: 90px;
+            align-items: center;
+        }
+        .thumb-wrapper {
+            position: relative;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .gallery img {
+            height: 70px;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            object-fit: cover;
+            display: block;
+            background: #fff;
+        }
+        .gallery img.active {
+            border-color: #007bff;
+        }
+        .delete-thumb-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            line-height: 18px;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0px 2px 4px rgba(0,0,0,0.3);
+        }
+        .delete-thumb-btn:hover {
+            background-color: #bd2130;
+        }
+        .delete-current-btn {
+            background-color: #dc3545;
+            margin-top: 5px;
+        }
+        .delete-current-btn:hover {
+            background-color: #bd2130;
+        }
+        .clear-all-btn {
+            background-color: #6c757d;
+            margin-top: 5px;
+        }
+        .clear-all-btn:hover {
+            background-color: #5a6268;
+        }
+        button {
+            padding: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .info-text {
+            font-size: 13px;
+            color: #495057;
+            padding: 6px;
+            background: #e9ecef;
+            border-radius: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-title">
+        <img src="logo.png" alt="Logo">
+        <h1>Convertidor de Formatos</h1>
+    </div>
+
+    <div class="paste-notice">
+        📌 <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) para pegar imágenes o arrastra archivos desde tu ordenador.
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="imgInput">Seleccionar Imágenes:</label>
+                <input type="file" id="imgInput" accept="image/*" multiple>
+            </div>
+
+            <div class="info-text" id="infoLabel">Ninguna imagen seleccionada</div>
+
+            <div class="control-group">
+                <label for="targetFormat">Formato de Salida:</label>
+                <select id="targetFormat">
+                    <option value="ico">ICO / CUR (.ico / .cur) — Icono o Cursor con clic</option>
+                    <option value="png">PNG (.png) — Transparente / Auto-Recorte</option>
+                    <option value="jpg">JPG / JPEG (.jpg) — Ligero / Fotos</option>
+                    <option value="webp">WEBP (.webp) — Web moderno</option>
+                    <option value="gif">GIF (.gif) — Estático o GIF Animado</option>
+                    <option value="svg">SVG (.svg) — Vectorizado o Contenedor</option>
+                    <option value="pdf">PDF (.pdf) — Documento / Multi-página</option>
+                    <option value="bmp">BMP (.bmp) — Mapa de bits</option>
+                    <option value="tiff">TIFF (.tiff) — Sin compresión</option>
+                    <option value="tga">TGA (.tga) — Textura Truevision 32-bit</option>
+                    <option value="avif">AVIF (.avif) — Alta compresión</option>
+                </select>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- PANEL ESPECIAL 1: ICO / CURSOR (.ico/.cur) -->
+            <!-- ========================================== -->
+            <div class="special-panel" id="panelICO">
+                <div class="special-panel-title">Opciones Especiales de ICO / Cursor</div>
+
+                <div class="control-group">
+                    <label for="icoMode">Tipo de Archivo:</label>
+                    <select id="icoMode">
+                        <option value="ico_hotspot">Icono / Cursor (.ico con punto de clic)</option>
+                        <option value="cur">Cursor de Windows (.cur con punto de clic)</option>
+                        <option value="ico_std">Icono estándar (.ico para App / Favicon)</option>
+                    </select>
+                </div>
+
+                <div class="control-group" id="hotspotGroup">
+                    <label><strong>Punto donde el puntero da clic (Hotspot):</strong></label>
+                    <div style="font-size: 12px; color: #495057;">
+                        👉 <strong>Haz clic sobre la imagen a la derecha</strong> para marcar exactamente dónde hace clic el puntero.
+                    </div>
+                    <div class="info-text" id="hotspotCoordsLabel" style="background: #fff; border: 1px solid #ced4da; font-weight: bold;">
+                        Punto de clic: X = 0 px, Y = 0 px
+                    </div>
+                    <div class="quick-btn-group">
+                        <button type="button" onclick="setHotspotPreset(0, 0)">Flecha (0,0)</button>
+                        <button type="button" onclick="setHotspotPreset(0.5, 0.5)">Centro</button>
+                        <button type="button" onclick="setHotspotPreset(0.5, 0)">Punta Arriba</button>
+                        <button type="button" onclick="setHotspotPreset(0, 1)">Abajo-Izq</button>
+                    </div>
+                    <div class="cursor-test-box" id="cursorTestBox">
+                        Pasa el ratón por aquí para probar tu puntero en vivo<br>
+                        <span class="cursor-test-target" id="cursorTestTarget">Haz clic aquí para probar el punto</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="icoSize">Resoluciones incluidas:</label>
+                    <select id="icoSize">
+                        <option value="32">32 × 32 px (Estándar Puntero / Favicon)</option>
+                        <option value="multi">Multi-tamaño (16, 32, 48, 256 px)</option>
+                        <option value="16">16 × 16 px</option>
+                        <option value="48">48 × 48 px</option>
+                        <option value="64">64 × 64 px</option>
+                        <option value="128">128 × 128 px</option>
+                        <option value="256">256 × 256 px (Alta definición)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="icoShape">Forma / Recorte del Icono:</label>
+                    <select id="icoShape">
+                        <option value="none">Original (Sin recorte)</option>
+                        <option value="rounded">Cuadrado Redondeado (Estilo App)</option>
+                        <option value="circle">Circular</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="icoPadding">Margen interno: <strong id="icoPaddingVal">0%</strong></label>
+                    <input type="range" id="icoPadding" min="0" max="25" value="0">
+                </div>
+
+                <div class="ico-preview-strip">
+                    <div class="ico-preview-item">
+                        <canvas id="icoPrev16" width="16" height="16"></canvas>
+                        <span>16×16</span>
+                    </div>
+                    <div class="ico-preview-item">
+                        <canvas id="icoPrev32" width="32" height="32"></canvas>
+                        <span>32×32</span>
+                    </div>
+                    <div class="ico-preview-item">
+                        <canvas id="icoPrev48" width="48" height="48"></canvas>
+                        <span>48×48</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- PANEL ESPECIAL 2: PNG (.png)               -->
+            <!-- ========================================== -->
+            <div class="special-panel hidden" id="panelPNG">
+                <div class="special-panel-title">Funciones Especiales PNG</div>
+                <label style="cursor: pointer; font-size: 13px;">
+                    <input type="checkbox" id="pngAutoTrim"> <strong>Recortar bordes transparentes vacíos</strong>
+                </label>
+                <label style="cursor: pointer; font-size: 13px;">
+                    <input type="checkbox" id="pngColorKeyToggle"> <strong>Hacer transparente un color (clic en imagen)</strong>
+                </label>
+                <div class="control-group hidden" id="pngColorKeyGroup">
+                    <div style="font-size: 12px; color: #495057;">
+                        Haz clic sobre el color de la imagen a la derecha que quieras borrar:
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="color" id="pngKeyColor" value="#ffffff" style="height: 30px; width: 60px;">
+                        <span style="font-size: 12px;">Tolerancia: <strong id="pngKeyTolVal">30</strong></span>
+                    </div>
+                    <input type="range" id="pngKeyTol" min="1" max="120" value="30">
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- PANEL ESPECIAL 3: GIF (.gif)               -->
+            <!-- ========================================== -->
+            <div class="special-panel hidden" id="panelGIF">
+                <div class="special-panel-title">Funciones Especiales GIF</div>
+                <label style="cursor: pointer; font-size: 13px;">
+                    <input type="checkbox" id="gifAnimateAll"> <strong>Unir todas las imágenes en un GIF Animado</strong>
+                </label>
+                <div class="control-group hidden" id="gifAnimControls">
+                    <label for="gifDelay">Velocidad por fotograma: <strong id="gifDelayVal">400 ms</strong></label>
+                    <input type="range" id="gifDelay" min="60" max="1500" step="20" value="400">
+                    <label style="cursor: pointer; font-size: 12px;">
+                        <input type="checkbox" id="gifLoop" checked> Bucle infinito
+                    </label>
+                </div>
+                <label style="cursor: pointer; font-size: 13px;">
+                    <input type="checkbox" id="gifDither" checked> Suavizar colores (Dithering Floyd-Steinberg)
+                </label>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- PANEL ESPECIAL 4: SVG (.svg)               -->
+            <!-- ========================================== -->
+            <div class="special-panel hidden" id="panelSVG">
+                <div class="special-panel-title">Funciones Especiales SVG</div>
+                <div class="control-group">
+                    <label for="svgMode">Modo de Conversión SVG:</label>
+                    <select id="svgMode">
+                        <option value="trace_mono">Vectorizar a trazos &lt;path&gt; (Silueta / Logo)</option>
+                        <option value="trace_color">Vectorizar a trazos &lt;path&gt; (Multicolor)</option>
+                        <option value="embed">Imagen embebida sin pérdida</option>
+                    </select>
+                </div>
+                <div class="control-group" id="svgThresholdGroup">
+                    <label for="svgThreshold">Umbral de Silueta: <strong id="svgThresholdVal">128</strong></label>
+                    <input type="range" id="svgThreshold" min="15" max="245" value="128">
+                </div>
+                <div class="control-group hidden" id="svgColorsGroup">
+                    <label for="svgColors">Capas de color vectoriales: <strong id="svgColorsVal">4</strong></label>
+                    <input type="range" id="svgColors" min="2" max="8" value="4">
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- PANEL ESPECIAL 5: PDF (.pdf)               -->
+            <!-- ========================================== -->
+            <div class="special-panel hidden" id="panelPDF">
+                <div class="special-panel-title">Funciones Especiales PDF</div>
+                <label style="cursor: pointer; font-size: 13px;">
+                    <input type="checkbox" id="pdfMergeAll" checked> <strong>Unir todas las imágenes en un solo PDF multi-página</strong>
+                </label>
+                <div class="control-group">
+                    <label for="pdfPageSize">Tamaño de Hoja:</label>
+                    <select id="pdfPageSize">
+                        <option value="fit">Ajustar hoja al tamaño exacto de cada imagen</option>
+                        <option value="a4_p">A4 Vertical (210 × 297 mm)</option>
+                        <option value="a4_l">A4 Horizontal (297 × 210 mm)</option>
+                    </select>
+                </div>
+                <div class="control-group hidden" id="pdfMarginGroup">
+                    <label for="pdfMargin">Margen de hoja: <strong id="pdfMarginVal">24 pt</strong></label>
+                    <input type="range" id="pdfMargin" min="0" max="72" value="24">
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- PANEL ESPECIAL 6: BMP / TIFF / TGA         -->
+            <!-- ========================================== -->
+            <div class="special-panel hidden" id="panelRAW">
+                <div class="special-panel-title">Opciones de Mapa de Bits / Textura</div>
+                <div class="control-group">
+                    <label for="rawColorMode">Canales de Color:</label>
+                    <select id="rawColorMode">
+                        <option value="rgba">32-bit RGBA (Conserva transparencia)</option>
+                        <option value="rgb">24-bit RGB (Fondo sólido)</option>
+                        <option value="gray">Escala de grises</option>
+                    </select>
+                </div>
+                <label style="cursor: pointer; font-size: 13px;">
+                    <input type="checkbox" id="rawFlipY"> Invertir eje vertical (Flip Y para motores 3D / OpenGL)
+                </label>
+            </div>
+
+            <!-- CONTROLES COMUNES DE CALIDAD / FONDO / TAMAÑO -->
+            <div class="control-group hidden" id="qualityGroup">
+                <label for="qualityRange">Calidad de compresión: <strong id="qualityVal">92%</strong></label>
+                <input type="range" id="qualityRange" min="10" max="100" value="92">
+            </div>
+
+            <div class="control-group hidden" id="bgFillGroup">
+                <label for="bgFillColor">Color de fondo (para zonas transparentes):</label>
+                <input type="color" id="bgFillColor" value="#ffffff" style="height: 36px; width: 100%;">
+            </div>
+
+            <div class="control-group" id="resizeGroup">
+                <label for="resizeMode">Tamaño / Redimensionar:</label>
+                <select id="resizeMode">
+                    <option value="original">Original (100% sin cambios)</option>
+                    <option value="50">50% de escala</option>
+                    <option value="25">25% de escala</option>
+                    <option value="custom">Ancho personalizado (px)</option>
+                </select>
+            </div>
+
+            <div class="control-group hidden" id="customWidthGroup">
+                <label for="customWidth">Ancho máximo (px, mantiene proporción):</label>
+                <input type="number" id="customWidth" min="1" max="10000" value="1080" style="padding: 6px;">
+            </div>
+
+            <button id="copyBtn" disabled style="background-color: #007bff; margin-bottom: 5px;">Copiar al Portapapeles (PNG)</button>
+            <button id="downloadSingleBtn" disabled style="margin-bottom: 5px;">Descargar Archivo</button>
+            <button id="downloadZipBtn" disabled>Descargar Todas (.ZIP)</button>
+            <button id="clearAllBtn" class="clear-all-btn">Limpiar Todo</button>
+        </div>
+
+        <div class="preview-area">
+            <div class="gallery" id="gallery"></div>
+            <div class="canvas-hint-banner hidden" id="canvasHintBanner">
+                🎯 Haz clic en cualquier punto de la imagen para marcar dónde hace clic el puntero
+            </div>
+            <div class="canvas-wrap" id="canvasWrap">
+                <canvas id="canvas"></canvas>
+            </div>
+            <button id="deleteCurrentBtn" class="delete-current-btn" disabled>Borrar Imagen Seleccionada</button>
+        </div>
+    </div>
+
+    <script>
+        const imgInput = document.getElementById('imgInput');
+        const infoLabel = document.getElementById('infoLabel');
+        const targetFormat = document.getElementById('targetFormat');
+
+        // Special Panels
+        const panelICO = document.getElementById('panelICO');
+        const icoMode = document.getElementById('icoMode');
+        const hotspotGroup = document.getElementById('hotspotGroup');
+        const hotspotCoordsLabel = document.getElementById('hotspotCoordsLabel');
+        const cursorTestBox = document.getElementById('cursorTestBox');
+        const cursorTestTarget = document.getElementById('cursorTestTarget');
+        const icoSize = document.getElementById('icoSize');
+        const icoShape = document.getElementById('icoShape');
+        const icoPadding = document.getElementById('icoPadding');
+        const icoPaddingVal = document.getElementById('icoPaddingVal');
+        const icoPrev16 = document.getElementById('icoPrev16');
+        const icoPrev32 = document.getElementById('icoPrev32');
+        const icoPrev48 = document.getElementById('icoPrev48');
+
+        const panelPNG = document.getElementById('panelPNG');
+        const pngAutoTrim = document.getElementById('pngAutoTrim');
+        const pngColorKeyToggle = document.getElementById('pngColorKeyToggle');
+        const pngColorKeyGroup = document.getElementById('pngColorKeyGroup');
+        const pngKeyColor = document.getElementById('pngKeyColor');
+        const pngKeyTol = document.getElementById('pngKeyTol');
+        const pngKeyTolVal = document.getElementById('pngKeyTolVal');
+
+        const panelGIF = document.getElementById('panelGIF');
+        const gifAnimateAll = document.getElementById('gifAnimateAll');
+        const gifAnimControls = document.getElementById('gifAnimControls');
+        const gifDelay = document.getElementById('gifDelay');
+        const gifDelayVal = document.getElementById('gifDelayVal');
+        const gifLoop = document.getElementById('gifLoop');
+        const gifDither = document.getElementById('gifDither');
+
+        const panelSVG = document.getElementById('panelSVG');
+        const svgMode = document.getElementById('svgMode');
+        const svgThresholdGroup = document.getElementById('svgThresholdGroup');
+        const svgThreshold = document.getElementById('svgThreshold');
+        const svgThresholdVal = document.getElementById('svgThresholdVal');
+        const svgColorsGroup = document.getElementById('svgColorsGroup');
+        const svgColors = document.getElementById('svgColors');
+        const svgColorsVal = document.getElementById('svgColorsVal');
+
+        const panelPDF = document.getElementById('panelPDF');
+        const pdfMergeAll = document.getElementById('pdfMergeAll');
+        const pdfPageSize = document.getElementById('pdfPageSize');
+        const pdfMarginGroup = document.getElementById('pdfMarginGroup');
+        const pdfMargin = document.getElementById('pdfMargin');
+        const pdfMarginVal = document.getElementById('pdfMarginVal');
+
+        const panelRAW = document.getElementById('panelRAW');
+        const rawColorMode = document.getElementById('rawColorMode');
+        const rawFlipY = document.getElementById('rawFlipY');
+
+        const qualityGroup = document.getElementById('qualityGroup');
+        const qualityRange = document.getElementById('qualityRange');
+        const qualityVal = document.getElementById('qualityVal');
+        const bgFillGroup = document.getElementById('bgFillGroup');
+        const bgFillColor = document.getElementById('bgFillColor');
+        const resizeGroup = document.getElementById('resizeGroup');
+        const resizeMode = document.getElementById('resizeMode');
+        const customWidthGroup = document.getElementById('customWidthGroup');
+        const customWidth = document.getElementById('customWidth');
+
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadSingleBtn = document.getElementById('downloadSingleBtn');
+        const downloadZipBtn = document.getElementById('downloadZipBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const deleteCurrentBtn = document.getElementById('deleteCurrentBtn');
+
+        const canvasHintBanner = document.getElementById('canvasHintBanner');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const gallery = document.getElementById('gallery');
+
+        let loadedImages = [];
+        let selectedIndex = -1;
+
+        // Hotspot state (normalized 0..1 coordinates on the icon)
+        let hotspotNormX = 0;
+        let hotspotNormY = 0;
+        let isDraggingHotspot = false;
+
+        // GIF live animation timer
+        let gifPreviewTimer = null;
+        let gifPreviewFrameIdx = 0;
+
+        function isHotspotActive() {
+            return targetFormat.value === 'ico' && (icoMode.value === 'ico_hotspot' || icoMode.value === 'cur');
+        }
+
+        function isEyedropperActive() {
+            return targetFormat.value === 'png' && pngColorKeyToggle.checked;
+        }
+
+        function updateFormatControls() {
+            const fmt = targetFormat.value;
+
+            panelICO.classList.toggle('hidden', fmt !== 'ico');
+            panelPNG.classList.toggle('hidden', fmt !== 'png');
+            panelGIF.classList.toggle('hidden', fmt !== 'gif');
+            panelSVG.classList.toggle('hidden', fmt !== 'svg');
+            panelPDF.classList.toggle('hidden', fmt !== 'pdf');
+            panelRAW.classList.toggle('hidden', !['bmp', 'tiff', 'tga'].includes(fmt));
+
+            hotspotGroup.classList.toggle('hidden', !isHotspotActive());
+            pngColorKeyGroup.classList.toggle('hidden', !pngColorKeyToggle.checked);
+            gifAnimControls.classList.toggle('hidden', !gifAnimateAll.checked);
+
+            svgThresholdGroup.classList.toggle('hidden', svgMode.value !== 'trace_mono');
+            svgColorsGroup.classList.toggle('hidden', svgMode.value !== 'trace_color');
+            pdfMarginGroup.classList.toggle('hidden', pdfPageSize.value === 'fit');
+
+            const needsQuality = ['jpg', 'webp', 'avif', 'pdf'].includes(fmt);
+            qualityGroup.classList.toggle('hidden', !needsQuality);
+
+            const needsOpaqueBg = ['jpg', 'pdf'].includes(fmt) || (['bmp', 'tiff', 'tga'].includes(fmt) && rawColorMode.value === 'rgb');
+            bgFillGroup.classList.toggle('hidden', !needsOpaqueBg);
+
+            resizeGroup.classList.toggle('hidden', fmt === 'ico');
+            customWidthGroup.classList.toggle('hidden', fmt === 'ico' || resizeMode.value !== 'custom');
+
+            // Update hint banner above canvas
+            if (isHotspotActive()) {
+                canvasHintBanner.classList.remove('hidden');
+                canvasHintBanner.textContent = '🎯 Haz clic o arrastra sobre la imagen para marcar dónde da clic el puntero';
+                canvas.style.cursor = 'crosshair';
+            } else if (isEyedropperActive()) {
+                canvasHintBanner.classList.remove('hidden');
+                canvasHintBanner.textContent = '🧪 Haz clic sobre cualquier color de la imagen para volverlo transparente';
+                canvas.style.cursor = 'crosshair';
+            } else {
+                canvasHintBanner.classList.add('hidden');
+                canvas.style.cursor = 'default';
+            }
+
+            // Update download button label
+            if (fmt === 'gif' && gifAnimateAll.checked && loadedImages.length > 1) {
+                downloadSingleBtn.textContent = 'Descargar GIF Animado (.gif)';
+            } else if (fmt === 'pdf' && pdfMergeAll.checked && loadedImages.length > 1) {
+                downloadSingleBtn.textContent = `Descargar PDF Multi-página (${loadedImages.length} págs)`;
+            } else if (fmt === 'ico' && icoMode.value === 'cur') {
+                downloadSingleBtn.textContent = 'Descargar Cursor (.cur)';
+            } else {
+                downloadSingleBtn.textContent = `Descargar Archivo (.${fmt})`;
+            }
+
+            manageGifPreviewLoop();
+        }
+
+        window.setHotspotPreset = function(nx, ny) {
+            hotspotNormX = nx;
+            hotspotNormY = ny;
+            renderCurrentPreview();
+        };
+
+        // Canvas click / drag for ICO Hotspot OR PNG Eyedropper
+        function handleCanvasPointer(e) {
+            if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
+            const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+
+            if (isHotspotActive()) {
+                hotspotNormX = nx;
+                hotspotNormY = ny;
+                renderCurrentPreview();
+            } else if (isEyedropperActive()) {
+                const item = loadedImages[selectedIndex];
+                const tempC = document.createElement('canvas');
+                const iw = item.img.naturalWidth || item.img.width;
+                const ih = item.img.naturalHeight || item.img.height;
+                tempC.width = iw;
+                tempC.height = ih;
+                const tCtx = tempC.getContext('2d');
+                tCtx.drawImage(item.img, 0, 0);
+                const px = Math.min(iw - 1, Math.floor(nx * iw));
+                const py = Math.min(ih - 1, Math.floor(ny * ih));
+                const data = tCtx.getImageData(px, py, 1, 1).data;
+                const hex = '#' + [data[0], data[1], data[2]].map(v => v.toString(16).padStart(2, '0')).join('');
+                pngKeyColor.value = hex;
+                renderCurrentPreview();
+            }
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (isHotspotActive() || isEyedropperActive()) {
+                isDraggingHotspot = true;
+                handleCanvasPointer(e);
+            }
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (isDraggingHotspot && isHotspotActive()) {
+                handleCanvasPointer(e);
+            }
+        });
+        window.addEventListener('mouseup', () => {
+            isDraggingHotspot = false;
+        });
+
+        cursorTestTarget.addEventListener('click', () => {
+            const baseSize = icoSize.value === 'multi' ? 32 : parseInt(icoSize.value, 10);
+            const hx = Math.round(hotspotNormX * (baseSize - 1));
+            const hy = Math.round(hotspotNormY * (baseSize - 1));
+            const orig = cursorTestTarget.textContent;
+            cursorTestTarget.textContent = `¡Clic exacto en (${hx}, ${hy})!`;
+            cursorTestTarget.style.backgroundColor = '#28a745';
+            setTimeout(() => {
+                cursorTestTarget.textContent = orig;
+                cursorTestTarget.style.backgroundColor = '#007bff';
+            }, 1400);
+        });
+
+        // Listeners for all special controls
+        [targetFormat, icoMode, icoSize, icoShape, pngAutoTrim, pngColorKeyToggle,
+         gifAnimateAll, gifLoop, gifDither, svgMode, pdfMergeAll, pdfPageSize,
+         rawColorMode, rawFlipY, resizeMode].forEach(el => {
+            el.addEventListener('change', () => {
+                updateFormatControls();
+                renderCurrentPreview();
+            });
+        });
+
+        icoPadding.addEventListener('input', () => {
+            icoPaddingVal.textContent = `${icoPadding.value}%`;
+            renderCurrentPreview();
+        });
+        pngKeyColor.addEventListener('input', renderCurrentPreview);
+        pngKeyTol.addEventListener('input', () => {
+            pngKeyTolVal.textContent = pngKeyTol.value;
+            renderCurrentPreview();
+        });
+        gifDelay.addEventListener('input', () => {
+            gifDelayVal.textContent = `${gifDelay.value} ms`;
+            manageGifPreviewLoop();
+        });
+        svgThreshold.addEventListener('input', () => {
+            svgThresholdVal.textContent = svgThreshold.value;
+            renderCurrentPreview();
+        });
+        svgColors.addEventListener('input', () => {
+            svgColorsVal.textContent = svgColors.value;
+            renderCurrentPreview();
+        });
+        pdfMargin.addEventListener('input', () => {
+            pdfMarginVal.textContent = `${pdfMargin.value} pt`;
+            renderCurrentPreview();
+        });
+        qualityRange.addEventListener('input', () => {
+            qualityVal.textContent = `${qualityRange.value}%`;
+        });
+        bgFillColor.addEventListener('input', renderCurrentPreview);
+        customWidth.addEventListener('input', renderCurrentPreview);
+
+        // File Loading
+        imgInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) await processFiles(files);
+            imgInput.value = '';
+        });
+
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files).filter(f => f && f.type && f.type.startsWith('image/'));
+            if (files.length > 0) await processFiles(files);
+        });
+
+        window.addEventListener('paste', async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            const files = [];
+            for (const item of items) {
+                if (item.type && item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    if (blob) {
+                        files.push(new File([blob], `pegado_${Date.now()}_${files.length + 1}.png`, { type: blob.type }));
+                    }
+                }
+            }
+            if (files.length > 0) await processFiles(files);
+        });
+
+        async function processFiles(files) {
+            for (const file of files) {
+                try {
+                    const objUrl = URL.createObjectURL(file);
+                    const img = await new Promise((res, rej) => {
+                        const i = new Image();
+                        i.onload = () => res(i);
+                        i.onerror = rej;
+                        i.src = objUrl;
+                    });
+                    loadedImages.push({ name: file.name, img: img, objUrl: objUrl });
+                } catch (err) {
+                    console.error('No se pudo leer la imagen:', file.name, err);
+                }
+            }
+            if (loadedImages.length > 0) {
+                selectedIndex = loadedImages.length - 1;
+            }
+            updateFormatControls();
+            renderGallery();
+            renderCurrentPreview();
+        }
+
+        function getTargetDimensions(img) {
+            const origW = img.naturalWidth || img.width;
+            const origH = img.naturalHeight || img.height;
+            if (targetFormat.value === 'ico') {
+                const s = icoSize.value === 'multi' ? 256 : parseInt(icoSize.value, 10);
+                return { w: s, h: s };
+            }
+            const mode = resizeMode.value;
+            if (mode === '50') {
+                return { w: Math.max(1, Math.round(origW * 0.5)), h: Math.max(1, Math.round(origH * 0.5)) };
+            }
+            if (mode === '25') {
+                return { w: Math.max(1, Math.round(origW * 0.25)), h: Math.max(1, Math.round(origH * 0.25)) };
+            }
+            if (mode === 'custom') {
+                const targetW = Math.max(1, parseInt(customWidth.value, 10) || origW);
+                const ratio = targetW / origW;
+                return { w: targetW, h: Math.max(1, Math.round(origH * ratio)) };
+            }
+            return { w: origW, h: origH };
+        }
+
+        function hexToRgb(hex) {
+            const v = parseInt(hex.replace('#', ''), 16);
+            return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+        }
+
+        // Render icon at size `s` with shape clipping & padding
+        function renderIconSquare(img, targetCanvas, s) {
+            targetCanvas.width = s;
+            targetCanvas.height = s;
+            const tCtx = targetCanvas.getContext('2d');
+            tCtx.imageSmoothingEnabled = true;
+            tCtx.imageSmoothingQuality = 'high';
+            tCtx.clearRect(0, 0, s, s);
+
+            const padPct = parseInt(icoPadding.value, 10) / 100;
+            const padPx = s * padPct;
+            const avail = Math.max(1, s - padPx * 2);
+
+            tCtx.save();
+            const shape = icoShape.value;
+            if (shape === 'circle') {
+                tCtx.beginPath();
+                tCtx.arc(s / 2, s / 2, avail / 2, 0, Math.PI * 2);
+                tCtx.clip();
+            } else if (shape === 'rounded') {
+                const r = avail * 0.22;
+                const x0 = padPx, y0 = padPx, x1 = padPx + avail, y1 = padPx + avail;
+                tCtx.beginPath();
+                tCtx.moveTo(x0 + r, y0);
+                tCtx.lineTo(x1 - r, y0);
+                tCtx.quadraticCurveTo(x1, y0, x1, y0 + r);
+                tCtx.lineTo(x1, y1 - r);
+                tCtx.quadraticCurveTo(x1, y1, x1 - r, y1);
+                tCtx.lineTo(x0 + r, y1);
+                tCtx.quadraticCurveTo(x0, y1, x0, y1 - r);
+                tCtx.lineTo(x0, y0 + r);
+                tCtx.quadraticCurveTo(x0, y0, x0 + r, y0);
+                tCtx.closePath();
+                tCtx.clip();
+            }
+
+            const iw = img.naturalWidth || img.width;
+            const ih = img.naturalHeight || img.height;
+            const scale = Math.min(avail / iw, avail / ih);
+            const dw = iw * scale;
+            const dh = ih * scale;
+            tCtx.drawImage(img, (s - dw) / 2, (s - dh) / 2, dw, dh);
+            tCtx.restore();
+        }
+
+        // Core image processor applying format-specific filters (PNG chroma/trim, RAW flip/grayscale, etc.)
+        function renderProcessedCanvas(item, targetCanvas, forExport = false) {
+            const fmt = targetFormat.value;
+
+            if (fmt === 'ico') {
+                const displaySize = forExport
+                    ? (icoSize.value === 'multi' ? 256 : parseInt(icoSize.value, 10))
+                    : 256;
+                renderIconSquare(item.img, targetCanvas, displaySize);
+                return { w: displaySize, h: displaySize };
+            }
+
+            let { w, h } = getTargetDimensions(item.img);
+            const tempC = document.createElement('canvas');
+            tempC.width = w;
+            tempC.height = h;
+            const tCtx = tempC.getContext('2d');
+            tCtx.imageSmoothingEnabled = true;
+            tCtx.imageSmoothingQuality = 'high';
+
+            const needsFlipY = ['bmp', 'tiff', 'tga'].includes(fmt) && rawFlipY.checked;
+            if (needsFlipY) {
+                tCtx.translate(0, h);
+                tCtx.scale(1, -1);
+            }
+            tCtx.drawImage(item.img, 0, 0, w, h);
+            tCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+            // PNG Color-Key transparency
+            if (fmt === 'png' && pngColorKeyToggle.checked) {
+                const key = hexToRgb(pngKeyColor.value);
+                const tol = parseInt(pngKeyTol.value, 10);
+                const imgData = tCtx.getImageData(0, 0, w, h);
+                const d = imgData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    const dist = Math.hypot(d[i] - key.r, d[i + 1] - key.g, d[i + 2] - key.b);
+                    if (dist <= tol) {
+                        d[i + 3] = 0;
+                    } else if (dist <= tol + 12) {
+                        d[i + 3] = Math.round(((dist - tol) / 12) * d[i + 3]);
+                    }
+                }
+                tCtx.putImageData(imgData, 0, 0);
+            }
+
+            // PNG Auto-Trim transparent borders
+            let cropX = 0, cropY = 0, cropW = w, cropH = h;
+            if (fmt === 'png' && pngAutoTrim.checked) {
+                const d = tCtx.getImageData(0, 0, w, h).data;
+                let minX = w, minY = h, maxX = -1, maxY = -1;
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        if (d[(y * w + x) * 4 + 3] > 5) {
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                        }
+                    }
+                }
+                if (maxX >= minX && maxY >= minY) {
+                    cropX = minX;
+                    cropY = minY;
+                    cropW = maxX - minX + 1;
+                    cropH = maxY - minY + 1;
+                }
+            }
+
+            // RAW Grayscale
+            if (['bmp', 'tiff', 'tga'].includes(fmt) && rawColorMode.value === 'gray') {
+                const imgData = tCtx.getImageData(0, 0, w, h);
+                const d = imgData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    const lum = Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+                    d[i] = d[i + 1] = d[i + 2] = lum;
+                }
+                tCtx.putImageData(imgData, 0, 0);
+            }
+
+            targetCanvas.width = cropW;
+            targetCanvas.height = cropH;
+            const outCtx = targetCanvas.getContext('2d');
+            outCtx.clearRect(0, 0, cropW, cropH);
+
+            const needsOpaque = ['jpg', 'pdf'].includes(fmt) || (['bmp', 'tiff', 'tga'].includes(fmt) && rawColorMode.value === 'rgb');
+            if (needsOpaque) {
+                outCtx.fillStyle = bgFillColor.value;
+                outCtx.fillRect(0, 0, cropW, cropH);
+            }
+
+            outCtx.drawImage(tempC, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+            return { w: cropW, h: cropH };
+        }
+
+        function updateIcoMiniPreviews(img) {
+            renderIconSquare(img, icoPrev16, 16);
+            renderIconSquare(img, icoPrev32, 32);
+            renderIconSquare(img, icoPrev48, 48);
+
+            if (isHotspotActive()) {
+                const baseSize = icoSize.value === 'multi' ? 32 : parseInt(icoSize.value, 10);
+                const hx = Math.round(hotspotNormX * (baseSize - 1));
+                const hy = Math.round(hotspotNormY * (baseSize - 1));
+                hotspotCoordsLabel.textContent = `Punto de clic: X = ${hx} px, Y = ${hy} px (en ${baseSize}×${baseSize})`;
+
+                // Apply live cursor to test box using 32x32 preview
+                const hx32 = Math.round(hotspotNormX * 31);
+                const hy32 = Math.round(hotspotNormY * 31);
+                const cursorUrl = icoPrev32.toDataURL('image/png');
+                cursorTestBox.style.cursor = `url(${cursorUrl}) ${hx32} ${hy32}, auto`;
+            }
+        }
+
+        function drawHotspotMarkerOnPreview() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            const px = hotspotNormX * cw;
+            const py = hotspotNormY * ch;
+
+            ctx.save();
+            // Outer white ring + inner red/blue crosshair
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(px, py, 10, 0, Math.PI * 2);
+            ctx.moveTo(px - 16, py); ctx.lineTo(px + 16, py);
+            ctx.moveTo(px, py - 16); ctx.lineTo(px, py + 16);
+            ctx.stroke();
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#dc3545';
+            ctx.beginPath();
+            ctx.arc(px, py, 10, 0, Math.PI * 2);
+            ctx.moveTo(px - 16, py); ctx.lineTo(px + 16, py);
+            ctx.moveTo(px, py - 16); ctx.lineTo(px, py + 16);
+            ctx.stroke();
+
+            ctx.fillStyle = '#dc3545';
+            ctx.beginPath();
+            ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function manageGifPreviewLoop() {
+            if (gifPreviewTimer) {
+                clearInterval(gifPreviewTimer);
+                gifPreviewTimer = null;
+            }
+            if (targetFormat.value === 'gif' && gifAnimateAll.checked && loadedImages.length > 1) {
+                const delay = parseInt(gifDelay.value, 10) || 400;
+                gifPreviewTimer = setInterval(() => {
+                    gifPreviewFrameIdx = (gifPreviewFrameIdx + 1) % loadedImages.length;
+                    renderCurrentPreview(true);
+                }, delay);
+            }
+        }
+
+        function renderCurrentPreview(fromGifTimer = false) {
+            if (selectedIndex === -1 || !loadedImages[selectedIndex]) {
+                canvas.width = 0;
+                canvas.height = 0;
+                infoLabel.textContent = 'Ninguna imagen seleccionada';
+                updateButtonStates();
+                return;
+            }
+
+            const fmt = targetFormat.value;
+            let activeItem = loadedImages[selectedIndex];
+            if (fromGifTimer && fmt === 'gif' && gifAnimateAll.checked && loadedImages.length > 1) {
+                activeItem = loadedImages[gifPreviewFrameIdx] || activeItem;
+            }
+
+            const { w, h } = renderProcessedCanvas(activeItem, canvas, false);
+
+            if (fmt === 'ico') {
+                updateIcoMiniPreviews(activeItem.img);
+                if (isHotspotActive()) {
+                    drawHotspotMarkerOnPreview();
+                }
+            } else if (fmt === 'svg' && svgMode.value !== 'embed') {
+                // Show live posterized/threshold vector preview on canvas
+                renderSvgVectorPreviewOnCanvas();
+            }
+
+            infoLabel.textContent = `${activeItem.name} → .${fmt === 'ico' && icoMode.value === 'cur' ? 'cur' : fmt.toUpperCase()} (${w} × ${h} px)`;
+            updateButtonStates();
+        }
+
+        function renderSvgVectorPreviewOnCanvas() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const d = imgData.data;
+            if (svgMode.value === 'trace_mono') {
+                const thresh = parseInt(svgThreshold.value, 10);
+                for (let i = 0; i < d.length; i += 4) {
+                    if (d[i + 3] < 128) continue;
+                    const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                    if (lum < thresh) {
+                        d[i] = 33; d[i + 1] = 37; d[i + 2] = 41; d[i + 3] = 255;
+                    } else {
+                        d[i + 3] = 0;
+                    }
+                }
+            } else if (svgMode.value === 'trace_color') {
+                const levels = Math.max(2, parseInt(svgColors.value, 10));
+                const step = 255 / (levels - 1);
+                for (let i = 0; i < d.length; i += 4) {
+                    if (d[i + 3] < 128) { d[i + 3] = 0; continue; }
+                    d[i] = Math.round(Math.round(d[i] / step) * step);
+                    d[i + 1] = Math.round(Math.round(d[i + 1] / step) * step);
+                    d[i + 2] = Math.round(Math.round(d[i + 2] / step) * step);
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        function renderGallery() {
+            gallery.innerHTML = '';
+            loadedImages.forEach((item, index) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'thumb-wrapper';
+
+                const thumb = document.createElement('img');
+                thumb.src = item.img.src;
+                if (index === selectedIndex) thumb.classList.add('active');
+
+                thumb.addEventListener('click', () => {
+                    selectedIndex = index;
+                    updateActiveThumb();
+                    renderCurrentPreview();
+                });
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-thumb-btn';
+                delBtn.innerHTML = '&times;';
+                delBtn.title = 'Borrar imagen';
+                delBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeImage(index);
+                });
+
+                wrap.appendChild(thumb);
+                wrap.appendChild(delBtn);
+                gallery.appendChild(wrap);
+            });
+            updateButtonStates();
+        }
+
+        function updateActiveThumb() {
+            gallery.querySelectorAll('.thumb-wrapper img').forEach((img, idx) => {
+                if (idx === selectedIndex) {
+                    img.classList.add('active');
+                    img.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } else {
+                    img.classList.remove('active');
+                }
+            });
+        }
+
+        function updateButtonStates() {
+            const hasImages = loadedImages.length > 0;
+            copyBtn.disabled = !hasImages;
+            downloadSingleBtn.disabled = !hasImages;
+            downloadZipBtn.disabled = !hasImages;
+            deleteCurrentBtn.disabled = !hasImages;
+        }
+
+        function removeImage(index) {
+            if (index < 0 || index >= loadedImages.length) return;
+            const [removed] = loadedImages.splice(index, 1);
+            if (removed && removed.objUrl) URL.revokeObjectURL(removed.objUrl);
+
+            if (loadedImages.length === 0) {
+                selectedIndex = -1;
+            } else if (selectedIndex >= loadedImages.length) {
+                selectedIndex = loadedImages.length - 1;
+            }
+            updateFormatControls();
+            renderGallery();
+            renderCurrentPreview();
+        }
+
+        deleteCurrentBtn.addEventListener('click', () => {
+            if (selectedIndex !== -1) removeImage(selectedIndex);
+        });
+
+        clearAllBtn.addEventListener('click', () => {
+            loadedImages.forEach(item => {
+                if (item.objUrl) URL.revokeObjectURL(item.objUrl);
+            });
+            loadedImages = [];
+            selectedIndex = -1;
+            updateFormatControls();
+            renderGallery();
+            renderCurrentPreview();
+        });
+
+        // ==========================================
+        // FORMAT ENCODERS WITH SPECIAL FUNCTIONS
+        // ==========================================
+
+        function canvasToBlobAsync(c, mime, quality) {
+            return new Promise((resolve) => c.toBlob(resolve, mime, quality));
+        }
+
+        // 1. ICO & CUR Encoder (Supports Multi-Size, Shape Mask, and Pointer Click Hotspot X/Y!)
+        async function encodeICOorCUR(img) {
+            const sizes = icoSize.value === 'multi' ? [16, 32, 48, 256] : [parseInt(icoSize.value, 10)];
+            const mode = icoMode.value; // 'ico_hotspot' | 'cur' | 'ico_std'
+            const isCurFile = mode === 'cur';
+            const writeHotspot = mode === 'cur' || mode === 'ico_hotspot';
+            const pngBuffers = [];
+
+            for (const s of sizes) {
+                const c = document.createElement('canvas');
+                renderIconSquare(img, c, s);
+                const blob = await canvasToBlobAsync(c, 'image/png');
+                const buf = new Uint8Array(await blob.arrayBuffer());
+                const hx = Math.max(0, Math.min(s - 1, Math.round(hotspotNormX * (s - 1))));
+                const hy = Math.max(0, Math.min(s - 1, Math.round(hotspotNormY * (s - 1))));
+                pngBuffers.push({ size: s, data: buf, hx, hy });
+            }
+
+            const headerSize = 6 + pngBuffers.length * 16;
+            const totalSize = headerSize + pngBuffers.reduce((acc, p) => acc + p.data.length, 0);
+            const out = new Uint8Array(totalSize);
+            const view = new DataView(out.buffer);
+
+            view.setUint16(0, 0, true);
+            view.setUint16(2, isCurFile ? 2 : 1, true); // 1 = ICO, 2 = CUR
+            view.setUint16(4, pngBuffers.length, true);
+
+            let offset = headerSize;
+            pngBuffers.forEach((entry, idx) => {
+                const dirPos = 6 + idx * 16;
+                out[dirPos] = entry.size >= 256 ? 0 : entry.size;
+                out[dirPos + 1] = entry.size >= 256 ? 0 : entry.size;
+                out[dirPos + 2] = 0;
+                out[dirPos + 3] = 0;
+                if (writeHotspot) {
+                    view.setUint16(dirPos + 4, entry.hx, true); // Hotspot X
+                    view.setUint16(dirPos + 6, entry.hy, true); // Hotspot Y
+                } else {
+                    view.setUint16(dirPos + 4, 1, true);        // Color planes
+                    view.setUint16(dirPos + 6, 32, true);       // 32 bpp
+                }
+                view.setUint32(dirPos + 8, entry.data.length, true);
+                view.setUint32(dirPos + 12, offset, true);
+                out.set(entry.data, offset);
+                offset += entry.data.length;
+            });
+
+            return {
+                blob: new Blob([out], { type: 'image/x-icon' }),
+                ext: isCurFile ? 'cur' : 'ico'
+            };
+        }
+
+        // 2. BMP Encoder (24-bit RGB or 32-bit BGRA)
+        function encodeBMP(c) {
+            const w = c.width;
+            const h = c.height;
+            const imgData = c.getContext('2d').getImageData(0, 0, w, h).data;
+            const is24 = rawColorMode.value === 'rgb';
+            const bpp = is24 ? 24 : 32;
+            const rowStride = is24 ? Math.ceil((w * 3) / 4) * 4 : w * 4;
+            const pixelSize = rowStride * h;
+            const fileSize = 54 + pixelSize;
+            const out = new Uint8Array(fileSize);
+            const view = new DataView(out.buffer);
+
+            out[0] = 0x42; out[1] = 0x4D; // 'BM'
+            view.setUint32(2, fileSize, true);
+            view.setUint32(10, 54, true);
+            view.setUint32(14, 40, true);
+            view.setInt32(18, w, true);
+            view.setInt32(22, h, true);
+            view.setUint16(26, 1, true);
+            view.setUint16(28, bpp, true);
+            view.setUint32(34, pixelSize, true);
+            view.setInt32(38, 2835, true);
+            view.setInt32(42, 2835, true);
+
+            for (let y = h - 1; y >= 0; y--) {
+                const srcRow = y * w * 4;
+                let dstPos = 54 + (h - 1 - y) * rowStride;
+                for (let x = 0; x < w; x++) {
+                    const idx = srcRow + x * 4;
+                    out[dstPos++] = imgData[idx + 2]; // B
+                    out[dstPos++] = imgData[idx + 1]; // G
+                    out[dstPos++] = imgData[idx];     // R
+                    if (!is24) out[dstPos++] = imgData[idx + 3]; // A
+                }
+            }
+            return new Blob([out], { type: 'image/bmp' });
+        }
+
+        // 3. TGA Encoder
+        function encodeTGA(c) {
+            const w = c.width;
+            const h = c.height;
+            const imgData = c.getContext('2d').getImageData(0, 0, w, h).data;
+            const is24 = rawColorMode.value === 'rgb';
+            const bytesPerPx = is24 ? 3 : 4;
+            const out = new Uint8Array(18 + w * h * bytesPerPx);
+            const view = new DataView(out.buffer);
+
+            out[2] = 2;
+            view.setUint16(12, w, true);
+            view.setUint16(14, h, true);
+            out[16] = is24 ? 24 : 32;
+            out[17] = is24 ? 0x20 : 0x28;
+
+            let pos = 18;
+            for (let i = 0; i < imgData.length; i += 4) {
+                out[pos++] = imgData[i + 2];
+                out[pos++] = imgData[i + 1];
+                out[pos++] = imgData[i];
+                if (!is24) out[pos++] = imgData[i + 3];
+            }
+            return new Blob([out], { type: 'image/x-tga' });
+        }
+
+        // 4. TIFF Encoder
+        function encodeTIFF(c) {
+            const w = c.width;
+            const h = c.height;
+            const imgData = c.getContext('2d').getImageData(0, 0, w, h).data;
+            const numTags = 13;
+            const ifdStart = 8;
+            const extraStart = ifdStart + 2 + numTags * 12 + 4;
+            const pixelStart = extraStart + 24;
+            const out = new Uint8Array(pixelStart + imgData.length);
+            const view = new DataView(out.buffer);
+
+            out[0] = 0x49; out[1] = 0x49;
+            view.setUint16(2, 42, true);
+            view.setUint32(4, ifdStart, true);
+
+            view.setUint16(ifdStart, numTags, true);
+            let p = ifdStart + 2;
+            const writeTag = (tag, type, count, value) => {
+                view.setUint16(p, tag, true);
+                view.setUint16(p + 2, type, true);
+                view.setUint32(p + 4, count, true);
+                view.setUint32(p + 8, value, true);
+                p += 12;
+            };
+
+            writeTag(256, 4, 1, w);
+            writeTag(257, 4, 1, h);
+            writeTag(258, 3, 4, extraStart);
+            writeTag(259, 3, 1, 1);
+            writeTag(262, 3, 1, 2);
+            writeTag(273, 4, 1, pixelStart);
+            writeTag(277, 3, 1, 4);
+            writeTag(278, 4, 1, h);
+            writeTag(279, 4, 1, imgData.length);
+            writeTag(282, 5, 1, extraStart + 8);
+            writeTag(283, 5, 1, extraStart + 16);
+            writeTag(296, 3, 1, 2);
+            writeTag(338, 3, 1, 2);
+            view.setUint32(p, 0, true);
+
+            for (let i = 0; i < 4; i++) view.setUint16(extraStart + i * 2, 8, true);
+            view.setUint32(extraStart + 8, 72, true);
+            view.setUint32(extraStart + 12, 1, true);
+            view.setUint32(extraStart + 16, 72, true);
+            view.setUint32(extraStart + 20, 1, true);
+
+            out.set(imgData, pixelStart);
+            return new Blob([out], { type: 'image/tiff' });
+        }
+
+        // 5. GIF89a Encoder (Supports Static + Multi-frame Animated GIF + Floyd-Steinberg Dithering!)
+        function encodeGIFFromCanvases(canvases, delayMs, loopInfinite, useDither) {
+            const w = canvases[0].width;
+            const h = canvases[0].height;
+            const bytes = [];
+            const pushStr = (s) => { for (let i = 0; i < s.length; i++) bytes.push(s.charCodeAt(i)); };
+            const push16 = (v) => { bytes.push(v & 0xFF, (v >> 8) & 0xFF); };
+
+            pushStr('GIF89a');
+            push16(w);
+            push16(h);
+            bytes.push(0xF7, 0xFF, 0x00);
+
+            for (let r = 0; r < 6; r++) {
+                for (let g = 0; g < 6; g++) {
+                    for (let b = 0; b < 6; b++) {
+                        bytes.push(r * 51, g * 51, b * 51);
+                    }
+                }
+            }
+            for (let i = 0; i < 39; i++) {
+                const v = Math.round((i / 38) * 255);
+                bytes.push(v, v, v);
+            }
+            bytes.push(0, 0, 0); // 255 = transparent
+
+            // Netscape 2.0 Loop Extension if multi-frame
+            if (canvases.length > 1 && loopInfinite) {
+                bytes.push(0x21, 0xFF, 0x0B);
+                pushStr('NETSCAPE2.0');
+                bytes.push(0x03, 0x01, 0x00, 0x00, 0x00);
+            }
+
+            const delayCs = Math.max(2, Math.round(delayMs / 10));
+            const totalPixels = w * h;
+            const dict = new Int32Array(4096 * 256);
+
+            for (const c of canvases) {
+                const imgData = c.getContext('2d').getImageData(0, 0, w, h).data;
+                const rBuf = new Float32Array(totalPixels);
+                const gBuf = new Float32Array(totalPixels);
+                const bBuf = new Float32Array(totalPixels);
+                for (let i = 0; i < totalPixels; i++) {
+                    const p = i * 4;
+                    rBuf[i] = imgData[p];
+                    gBuf[i] = imgData[p + 1];
+                    bBuf[i] = imgData[p + 2];
+                }
+
+                const indices = new Uint8Array(totalPixels);
+                let hasTransparent = false;
+
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const i = y * w + x;
+                        if (imgData[i * 4 + 3] < 128) {
+                            indices[i] = 255;
+                            hasTransparent = true;
+                            continue;
+                        }
+                        const oldR = Math.max(0, Math.min(255, rBuf[i]));
+                        const oldG = Math.max(0, Math.min(255, gBuf[i]));
+                        const oldB = Math.max(0, Math.min(255, bBuf[i]));
+
+                        const qr = Math.round(oldR / 51);
+                        const qg = Math.round(oldG / 51);
+                        const qb = Math.round(oldB / 51);
+                        indices[i] = qr * 36 + qg * 6 + qb;
+
+                        if (useDither) {
+                            const errR = oldR - qr * 51;
+                            const errG = oldG - qg * 51;
+                            const errB = oldB - qb * 51;
+                            const distribute = (nx, ny, factor) => {
+                                if (nx >= 0 && nx < w && ny < h) {
+                                    const ni = ny * w + nx;
+                                    rBuf[ni] += errR * factor;
+                                    gBuf[ni] += errG * factor;
+                                    bBuf[ni] += errB * factor;
+                                }
+                            };
+                            distribute(x + 1, y, 7 / 16);
+                            distribute(x - 1, y + 1, 3 / 16);
+                            distribute(x, y + 1, 5 / 16);
+                            distribute(x + 1, y + 1, 1 / 16);
+                        }
+                    }
+                }
+
+                // Graphic Control Extension (Disposal 2 = restore to bg, delayCs, transparency)
+                const gceFlags = (2 << 2) | (hasTransparent ? 1 : 0);
+                bytes.push(0x21, 0xF9, 0x04, gceFlags);
+                push16(delayCs);
+                bytes.push(255, 0x00);
+
+                // Image Descriptor
+                bytes.push(0x2C);
+                push16(0); push16(0);
+                push16(w); push16(h);
+                bytes.push(0x00);
+
+                // LZW Stream
+                bytes.push(8);
+                const clearCode = 256;
+                const eoiCode = 257;
+                let codeSize = 9;
+                let nextCode = 258;
+                dict.fill(-1);
+
+                let bitBuffer = 0;
+                let bitCount = 0;
+                let subBlock = [];
+
+                const emitCode = (code) => {
+                    bitBuffer |= (code << bitCount);
+                    bitCount += codeSize;
+                    while (bitCount >= 8) {
+                        subBlock.push(bitBuffer & 0xFF);
+                        bitBuffer >>= 8;
+                        bitCount -= 8;
+                        if (subBlock.length === 255) {
+                            bytes.push(255, ...subBlock);
+                            subBlock = [];
+                        }
+                    }
+                };
+
+                emitCode(clearCode);
+                let prefix = indices[0];
+                for (let i = 1; i < totalPixels; i++) {
+                    const k = indices[i];
+                    const dictIdx = (prefix << 8) + k;
+                    if (dict[dictIdx] !== -1) {
+                        prefix = dict[dictIdx];
+                    } else {
+                        emitCode(prefix);
+                        if (nextCode < 4096) {
+                            dict[dictIdx] = nextCode++;
+                            if (nextCode > (1 << codeSize) && codeSize < 12) {
+                                codeSize++;
+                            }
+                        } else {
+                            emitCode(clearCode);
+                            dict.fill(-1);
+                            nextCode = 258;
+                            codeSize = 9;
+                        }
+                        prefix = k;
+                    }
+                }
+                emitCode(prefix);
+                emitCode(eoiCode);
+
+                if (bitCount > 0) subBlock.push(bitBuffer & 0xFF);
+                if (subBlock.length > 0) bytes.push(subBlock.length, ...subBlock);
+                bytes.push(0x00);
+            }
+
+            bytes.push(0x3B);
+            return new Blob([new Uint8Array(bytes)], { type: 'image/gif' });
+        }
+
+        // 6. SVG Encoder (Real Vector <path> Tracer OR Embedded Lossless Image)
+        function encodeSVG(c) {
+            const w = c.width;
+            const h = c.height;
+            const mode = svgMode.value;
+
+            if (mode === 'embed') {
+                const dataUrl = c.toDataURL('image/png');
+                const svg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">\n  <image href="${dataUrl}" width="${w}" height="${h}"/>\n</svg>`;
+                return new Blob([svg], { type: 'image/svg+xml' });
+            }
+
+            // Real Bitmap-to-Vector Run-Length <path> Tracer
+            const maxTraceDim = 320;
+            const scale = Math.min(1, maxTraceDim / Math.max(w, h));
+            const tw = Math.max(1, Math.round(w * scale));
+            const th = Math.max(1, Math.round(h * scale));
+
+            const traceC = document.createElement('canvas');
+            traceC.width = tw;
+            traceC.height = th;
+            const tCtx = traceC.getContext('2d');
+            tCtx.drawImage(c, 0, 0, tw, th);
+            const d = tCtx.getImageData(0, 0, tw, th).data;
+
+            const colorPaths = new Map(); // hex -> SVG path string
+
+            if (mode === 'trace_mono') {
+                const thresh = parseInt(svgThreshold.value, 10);
+                let pathD = '';
+                for (let y = 0; y < th; y++) {
+                    let runStart = -1;
+                    for (let x = 0; x <= tw; x++) {
+                        let isSolid = false;
+                        if (x < tw) {
+                            const i = (y * tw + x) * 4;
+                            const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+                            isSolid = d[i + 3] >= 128 && lum < thresh;
+                        }
+                        if (isSolid && runStart === -1) {
+                            runStart = x;
+                        } else if (!isSolid && runStart !== -1) {
+                            const rw = x - runStart;
+                            pathD += `M${runStart},${y}h${rw}v1h-${rw}Z`;
+                            runStart = -1;
+                        }
+                    }
+                }
+                colorPaths.set('#212529', pathD);
+            } else {
+                const levels = Math.max(2, parseInt(svgColors.value, 10));
+                const step = 255 / (levels - 1);
+                for (let y = 0; y < th; y++) {
+                    let currentHex = null;
+                    let runStart = 0;
+                    for (let x = 0; x <= tw; x++) {
+                        let hex = null;
+                        if (x < tw) {
+                            const i = (y * tw + x) * 4;
+                            if (d[i + 3] >= 128) {
+                                const r = Math.round(Math.round(d[i] / step) * step);
+                                const g = Math.round(Math.round(d[i + 1] / step) * step);
+                                const b = Math.round(Math.round(d[i + 2] / step) * step);
+                                hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+                            }
+                        }
+                        if (hex !== currentHex) {
+                            if (currentHex !== null) {
+                                const rw = x - runStart;
+                                colorPaths.set(currentHex, (colorPaths.get(currentHex) || '') + `M${runStart},${y}h${rw}v1h-${rw}Z`);
+                            }
+                            currentHex = hex;
+                            runStart = x;
+                        }
+                    }
+                }
+            }
+
+            let pathsXml = '';
+            colorPaths.forEach((dStr, hex) => {
+                if (dStr) pathsXml += `  <path fill="${hex}" d="${dStr}"/>\n`;
+            });
+
+            const svg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${tw} ${th}" shape-rendering="crispEdges">\n${pathsXml}</svg>`;
+            return new Blob([svg], { type: 'image/svg+xml' });
+        }
+
+        // 7. Single or Multi-Page PDF 1.4 Encoder
+        async function encodePDFPages(canvases, quality) {
+            const enc = new TextEncoder();
+            const parts = [];
+            const offsets = [];
+            let length = 0;
+
+            const pushText = (str) => {
+                const b = enc.encode(str);
+                parts.push(b);
+                length += b.length;
+            };
+            const pushBytes = (arr) => {
+                parts.push(arr);
+                length += arr.length;
+            };
+
+            pushText('%PDF-1.4\n');
+
+            const numPages = canvases.length;
+            // Obj 1: Catalog, Obj 2: Pages
+            // Each page i (0..numPages-1) uses 3 objects: Page (3 + i*3), Image (4 + i*3), Contents (5 + i*3)
+            const totalObjects = 2 + numPages * 3;
+
+            offsets[1] = length;
+            pushText('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+
+            const kidsRefs = [];
+            for (let i = 0; i < numPages; i++) kidsRefs.push(`${3 + i * 3} 0 R`);
+            offsets[2] = length;
+            pushText(`2 0 obj\n<< /Type /Pages /Kids [ ${kidsRefs.join(' ')} ] /Count ${numPages} >>\nendobj\n`);
+
+            const pageLayout = pdfPageSize.value; // 'fit' | 'a4_p' | 'a4_l'
+            const margin = pageLayout === 'fit' ? 0 : (parseInt(pdfMargin.value, 10) || 0);
+
+            for (let i = 0; i < numPages; i++) {
+                const c = canvases[i];
+                const iw = c.width;
+                const ih = c.height;
+                const jpgBlob = await canvasToBlobAsync(c, 'image/jpeg', quality);
+                const jpgBytes = new Uint8Array(await jpgBlob.arrayBuffer());
+
+                const pageObjId = 3 + i * 3;
+                const imgObjId = 4 + i * 3;
+                const contentObjId = 5 + i * 3;
+
+                let pageW = iw, pageH = ih, drawW = iw, drawH = ih, dx = 0, dy = 0;
+                if (pageLayout === 'a4_p' || pageLayout === 'a4_l') {
+                    pageW = pageLayout === 'a4_p' ? 595.28 : 841.89;
+                    pageH = pageLayout === 'a4_p' ? 841.89 : 595.28;
+                    const availW = Math.max(10, pageW - margin * 2);
+                    const availH = Math.max(10, pageH - margin * 2);
+                    const scale = Math.min(availW / iw, availH / ih);
+                    drawW = +(iw * scale).toFixed(2);
+                    drawH = +(ih * scale).toFixed(2);
+                    dx = +((pageW - drawW) / 2).toFixed(2);
+                    dy = +((pageH - drawH) / 2).toFixed(2);
+                }
+
+                offsets[pageObjId] = length;
+                pushText(`${pageObjId} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Im0 ${imgObjId} 0 R >> >> /Contents ${contentObjId} 0 R >>\nendobj\n`);
+
+                offsets[imgObjId] = length;
+                pushText(`${imgObjId} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpgBytes.length} >>\nstream\n`);
+                pushBytes(jpgBytes);
+                pushText('\nendstream\nendobj\n');
+
+                const contentStream = `q ${drawW} 0 0 ${drawH} ${dx} ${dy} cm /Im0 Do Q`;
+                offsets[contentObjId] = length;
+                pushText(`${contentObjId} 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream\nendobj\n`);
+            }
+
+            const xrefStart = length;
+            pushText(`xref\n0 ${totalObjects + 1}\n0000000000 65535 f \n`);
+            for (let objId = 1; objId <= totalObjects; objId++) {
+                pushText(String(offsets[objId]).padStart(10, '0') + ' 00000 n \n');
+            }
+            pushText(`trailer\n<< /Size ${totalObjects + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`);
+
+            return new Blob(parts, { type: 'application/pdf' });
+        }
+
+        // Unified conversion for a single item
+        async function convertItem(item) {
+            const fmt = targetFormat.value;
+            const q = parseInt(qualityRange.value, 10) / 100;
+
+            if (fmt === 'ico') {
+                return await encodeICOorCUR(item.img);
+            }
+
+            const workCanvas = document.createElement('canvas');
+            renderProcessedCanvas(item, workCanvas, true);
+
+            if (fmt === 'png') return { blob: await canvasToBlobAsync(workCanvas, 'image/png'), ext: 'png' };
+            if (fmt === 'jpg') return { blob: await canvasToBlobAsync(workCanvas, 'image/jpeg', q), ext: 'jpg' };
+            if (fmt === 'webp') return { blob: await canvasToBlobAsync(workCanvas, 'image/webp', q), ext: 'webp' };
+            if (fmt === 'avif') {
+                const blob = await canvasToBlobAsync(workCanvas, 'image/avif', q);
+                if (!blob || blob.type !== 'image/avif') {
+                    throw new Error('Tu navegador no soporta codificación AVIF nativa.');
+                }
+                return { blob, ext: 'avif' };
+            }
+            if (fmt === 'bmp') return { blob: encodeBMP(workCanvas), ext: 'bmp' };
+            if (fmt === 'tga') return { blob: encodeTGA(workCanvas), ext: 'tga' };
+            if (fmt === 'tiff') return { blob: encodeTIFF(workCanvas), ext: 'tiff' };
+            if (fmt === 'gif') {
+                return {
+                    blob: encodeGIFFromCanvases([workCanvas], parseInt(gifDelay.value, 10), gifLoop.checked, gifDither.checked),
+                    ext: 'gif'
+                };
+            }
+            if (fmt === 'svg') return { blob: encodeSVG(workCanvas), ext: 'svg' };
+            if (fmt === 'pdf') return { blob: await encodePDFPages([workCanvas], q), ext: 'pdf' };
+
+            return { blob: await canvasToBlobAsync(workCanvas, 'image/png'), ext: 'png' };
+        }
+
+        // Action Buttons
+        copyBtn.addEventListener('click', async () => {
+            if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
+            try {
+                const workCanvas = document.createElement('canvas');
+                renderProcessedCanvas(loadedImages[selectedIndex], workCanvas, true);
+                const blob = await canvasToBlobAsync(workCanvas, 'image/png');
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                const orig = copyBtn.textContent;
+                copyBtn.textContent = '¡Copiado!';
+                setTimeout(() => copyBtn.textContent = orig, 1500);
+            } catch (err) {
+                console.error(err);
+                alert('No se pudo copiar la imagen al portapapeles.');
+            }
+        });
+
+        downloadSingleBtn.addEventListener('click', async () => {
+            if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
+            const fmt = targetFormat.value;
+            const q = parseInt(qualityRange.value, 10) / 100;
+
+            downloadSingleBtn.disabled = true;
+            const origText = downloadSingleBtn.textContent;
+            downloadSingleBtn.textContent = 'Convirtiendo...';
+
+            try {
+                let blob, ext, downloadName;
+
+                if (fmt === 'gif' && gifAnimateAll.checked && loadedImages.length > 1) {
+                    const firstDim = getTargetDimensions(loadedImages[0].img);
+                    const frameCanvases = loadedImages.map(it => {
+                        const c = document.createElement('canvas');
+                        c.width = firstDim.w;
+                        c.height = firstDim.h;
+                        const tCtx = c.getContext('2d');
+                        const scale = Math.min(firstDim.w / it.img.width, firstDim.h / it.img.height);
+                        const dw = it.img.width * scale;
+                        const dh = it.img.height * scale;
+                        tCtx.drawImage(it.img, (firstDim.w - dw) / 2, (firstDim.h - dh) / 2, dw, dh);
+                        return c;
+                    });
+                    blob = encodeGIFFromCanvases(frameCanvases, parseInt(gifDelay.value, 10), gifLoop.checked, gifDither.checked);
+                    ext = 'gif';
+                    downloadName = 'animacion.gif';
+                } else if (fmt === 'pdf' && pdfMergeAll.checked && loadedImages.length > 1) {
+                    const pageCanvases = loadedImages.map(it => {
+                        const c = document.createElement('canvas');
+                        renderProcessedCanvas(it, c, true);
+                        return c;
+                    });
+                    blob = await encodePDFPages(pageCanvases, q);
+                    ext = 'pdf';
+                    downloadName = 'documento_imagenes.pdf';
+                } else {
+                    const item = loadedImages[selectedIndex];
+                    const res = await convertItem(item);
+                    blob = res.blob;
+                    ext = res.ext;
+                    const baseName = item.name.replace(/\.[^/.]+$/, "");
+                    downloadName = `${baseName}.${ext}`;
+                }
+
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.download = downloadName;
+                link.href = url;
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch (err) {
+                alert(err.message || 'Error al convertir la imagen.');
+            } finally {
+                downloadSingleBtn.disabled = false;
+                updateFormatControls();
+            }
+        });
+
+        downloadZipBtn.addEventListener('click', async () => {
+            if (loadedImages.length === 0) return;
+            const zip = new JSZip();
+            downloadZipBtn.disabled = true;
+            const origText = downloadZipBtn.textContent;
+            downloadZipBtn.textContent = 'Convirtiendo ZIP...';
+
+            try {
+                for (let i = 0; i < loadedImages.length; i++) {
+                    const item = loadedImages[i];
+                    const { blob, ext } = await convertItem(item);
+                    const seq = String(i + 1).padStart(3, '0');
+                    const baseName = item.name.replace(/\.[^/.]+$/, "");
+                    zip.file(`${seq}_${baseName}.${ext}`, blob);
+                }
+
+                const content = await zip.generateAsync({ type: 'blob' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(content);
+                link.href = url;
+                link.download = `imagenes_convertidas_${targetFormat.value}.zip`;
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch (err) {
+                alert(err.message || 'Error al generar el ZIP.');
+            } finally {
+                downloadZipBtn.disabled = false;
+                downloadZipBtn.textContent = origText;
+            }
+        });
+
+        updateFormatControls();
+    </script>
+</body>
+</html>

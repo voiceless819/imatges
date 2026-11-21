@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 900px;
+            max-width: 1120px;
             margin: 40px auto;
             padding: 0 20px;
             text-align: center;
@@ -131,6 +131,18 @@
             </div>
             <a href="quitar-fondo.html" class="hub-btn">Abrir</a>
         </div>
+
+        <!-- Card 3: Convertir Formatos -->
+        <div class="hub-card">
+            <div>
+                <h2>Convertir Formatos</h2>
+                <p>Convierte imágenes en lote a PNG, JPG, WEBP, ICO, GIF, BMP, TIFF, TGA, AVIF, SVG o PDF.</p>
+                <div class="preview-box">
+                    <canvas id="convertPreview" width="300" height="180"></canvas>
+                </div>
+            </div>
+            <a href="convertir.html" class="hub-btn">Abrir</a>
+        </div>
     </div>
 
     <script>
@@ -212,6 +224,44 @@
         bgCtx.moveTo(w / 2, 0);
         bgCtx.lineTo(w / 2, h);
         bgCtx.stroke();
+
+        // Preview 3: Convertir Formatos
+        const cvCanvas = document.getElementById('convertPreview');
+        const cvCtx = setupHiDPICanvas(cvCanvas, w, h);
+
+        cvCtx.fillStyle = '#f1f3f5';
+        cvCtx.fillRect(0, 0, w, h);
+
+        const formats = ['PNG', 'ICO', 'GIF', 'WEBP', 'BMP', 'PDF'];
+        const colors = ['#007bff', '#28a745', '#6f42c1', '#fd7e14', '#17a2b8', '#dc3545'];
+        const cols = 3;
+        const boxW = 72;
+        const boxH = 44;
+        const gap = 14;
+        const startX = (w - (cols * boxW + (cols - 1) * gap)) / 2;
+        const startY = (h - (2 * boxH + gap)) / 2;
+
+        formats.forEach((fmt, idx) => {
+            const col = idx % cols;
+            const row = Math.floor(idx / cols);
+            const x = startX + col * (boxW + gap);
+            const y = startY + row * (boxH + gap);
+
+            cvCtx.fillStyle = '#ffffff';
+            cvCtx.strokeStyle = '#ced4da';
+            cvCtx.lineWidth = 1;
+            cvCtx.fillRect(x, y, boxW, boxH);
+            cvCtx.strokeRect(x, y, boxW, boxH);
+
+            cvCtx.fillStyle = colors[idx];
+            cvCtx.fillRect(x, y, boxW, 6);
+
+            cvCtx.fillStyle = '#212529';
+            cvCtx.font = 'bold 13px Arial, sans-serif';
+            cvCtx.textAlign = 'center';
+            cvCtx.textBaseline = 'middle';
+            cvCtx.fillText('.' + fmt, x + boxW / 2, y + boxH / 2 + 3);
+        });
     </script>
 </body>
 </html>

@@ -144,6 +144,57 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+        .sections-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .section-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            font-size: 14px;
+            background-color: #e9ecef;
+            color: #495057;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .section-tab.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+            font-weight: bold;
+        }
+        .section-tab-count {
+            font-size: 11px;
+            opacity: 0.85;
+        }
+        .section-tab-btn {
+            background: transparent;
+            color: inherit;
+            border: none;
+            padding: 0 3px;
+            font-size: 13px;
+            cursor: pointer;
+            line-height: 1;
+            opacity: 0.75;
+        }
+        .section-tab-btn:hover {
+            opacity: 1;
+        }
+        .add-section-btn {
+            padding: 6px 12px;
+            font-size: 14px;
+            background-color: #28a745;
+        }
     </style>
 </head>
 <body>
@@ -152,6 +203,8 @@
     <div class="paste-notice">
         📌 <strong>Tip:</strong> Presiona <strong>Ctrl + V</strong> (o Cmd + V) para pegar imágenes desde el portapapeles.
     </div>
+
+    <div class="sections-bar" id="sectionsBar"></div>
 
     <div class="container">
         <div class="controls">
@@ -243,8 +296,9 @@
 
             <button id="copyBtn" disabled style="background-color: #007bff; margin-bottom: 5px;">Copiar al Portapapeles</button>
             <button id="downloadZipBtn" disabled>Descargar Todas (.ZIP)</button>
+            <button id="downloadAllSectionsBtn" class="hidden" disabled style="background-color: #17a2b8;">Descargar Todas las Secciones (.ZIP)</button>
 
-            <button id="clearAllBtn" class="clear-all-btn">Limpiar Todo</button>
+            <button id="clearAllBtn" class="clear-all-btn">Limpiar Sección</button>
         </div>
 
         <div class="preview-area">
@@ -266,22 +320,37 @@
         const positionSelect = document.getElementById('position');
         const tileDensityGroup = document.getElementById('tileDensityGroup');
         const tileSpacingInput = document.getElementById('tileSpacing');
+        const exportFormatSelect = document.getElementById('exportFormat');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const gallery = document.getElementById('gallery');
+        const sectionsBar = document.getElementById('sectionsBar');
+        const copyBtn = document.getElementById('copyBtn');
         const downloadZipBtn = document.getElementById('downloadZipBtn');
+        const downloadAllSectionsBtn = document.getElementById('downloadAllSectionsBtn');
         const deleteCurrentBtn = document.getElementById('deleteCurrentBtn');
         const clearAllBtn = document.getElementById('clearAllBtn');
 
-        let loadedImages = [];
-        let selectedIndex = -1;
+        let sections = [];
+        let activeSectionId = null;
+        let sectionCounter = 1;
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadState();
-        });
+        function getDefaultControls() {
+            return {
+                text: '© Mi Marca',
+                fontFamily: 'Arial, sans-serif',
+                fontSize: '48',
+                textColor: '#ffffff',
+                opacity: '0.5',
+                rotation: '0',
+                position: 'center',
+                tileSpacing: '80',
+                exportFormat: 'image/png'
+            };
+        }
 
-        function saveState() {
-            const controlsData = {
+        function getControlsFromDOM() {
+            return {
                 text: textInput.value,
                 fontFamily: fontFamilySelect.value,
                 fontSize: fontSizeInput.value,
@@ -290,55 +359,133 @@
                 rotation: rotationInput.value,
                 position: positionSelect.value,
                 tileSpacing: tileSpacingInput.value,
-                selectedIndex: selectedIndex
+                exportFormat: exportFormatSelect.value
             };
-            
-            const imagesData = loadedImages.map(item => ({
-                name: item.name,
-                src: item.img.src
+        }
+
+        function applyControlsToDOM(controls) {
+            const c = controls || getDefaultControls();
+            textInput.value = c.text ?? '© Mi Marca';
+            fontFamilySelect.value = c.fontFamily ?? 'Arial, sans-serif';
+            fontSizeInput.value = c.fontSize ?? '48';
+            textColorInput.value = c.textColor ?? '#ffffff';
+            opacityInput.value = c.opacity ?? '0.5';
+            rotationInput.value = c.rotation ?? '0';
+            rotationVal.textContent = `${rotationInput.value}°`;
+            positionSelect.value = c.position ?? 'center';
+            tileSpacingInput.value = c.tileSpacing ?? '80';
+            exportFormatSelect.value = c.exportFormat ?? 'image/png';
+        }
+
+        function getActiveSection() {
+            return sections.find(s => s.id === activeSectionId) || sections[0];
+        }
+
+        function createSection(name, inheritControls = null) {
+            const id = `sec_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+            return {
+                id: id,
+                name: name || `Sección ${sectionCounter++}`,
+                controls: inheritControls ? { ...inheritControls } : getDefaultControls(),
+                images: [],
+                selectedIndex: -1
+            };
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+        });
+
+        function saveState() {
+            const activeSec = getActiveSection();
+            if (activeSec) {
+                activeSec.controls = getControlsFromDOM();
+            }
+
+            const serialized = sections.map(sec => ({
+                id: sec.id,
+                name: sec.name,
+                controls: sec.controls,
+                selectedIndex: sec.selectedIndex,
+                images: sec.images.map(item => ({ name: item.name, src: item.img.src }))
             }));
 
             try {
-                localStorage.setItem('watermark_controls', JSON.stringify(controlsData));
-                localStorage.setItem('watermark_images', JSON.stringify(imagesData));
+                localStorage.setItem('watermark_sections_v1', JSON.stringify(serialized));
+                localStorage.setItem('watermark_active_section', activeSectionId || '');
             } catch (e) {
                 console.warn('El almacenamiento local está lleno o no está disponible.', e);
             }
         }
 
         async function loadState() {
-            const savedControls = localStorage.getItem('watermark_controls');
-            const savedImages = localStorage.getItem('watermark_images');
+            const savedSections = localStorage.getItem('watermark_sections_v1');
 
-            if (savedControls) {
-                const data = JSON.parse(savedControls);
-                textInput.value = data.text ?? '© Mi Marca';
-                fontFamilySelect.value = data.fontFamily ?? 'Arial, sans-serif';
-                fontSizeInput.value = data.fontSize ?? 48;
-                textColorInput.value = data.textColor ?? '#ffffff';
-                opacityInput.value = data.opacity ?? 0.5;
-                rotationInput.value = data.rotation ?? 0;
-                rotationVal.textContent = `${rotationInput.value}°`;
-                positionSelect.value = data.position ?? 'center';
-                tileSpacingInput.value = data.tileSpacing ?? 80;
-                selectedIndex = data.selectedIndex ?? -1;
+            if (savedSections) {
+                try {
+                    const parsed = JSON.parse(savedSections);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        sections = [];
+                        for (const raw of parsed) {
+                            const imgs = [];
+                            if (Array.isArray(raw.images)) {
+                                for (const item of raw.images) {
+                                    const img = await loadImageFromSrc(item.src);
+                                    imgs.push({ name: item.name, img: img });
+                                }
+                            }
+                            let selIdx = raw.selectedIndex ?? -1;
+                            if (selIdx >= imgs.length) selIdx = imgs.length - 1;
+                            sections.push({
+                                id: raw.id,
+                                name: raw.name || 'Sección',
+                                controls: { ...getDefaultControls(), ...(raw.controls || {}) },
+                                images: imgs,
+                                selectedIndex: selIdx
+                            });
+                        }
+                        sectionCounter = sections.length + 1;
+                        const savedActive = localStorage.getItem('watermark_active_section');
+                        activeSectionId = sections.some(s => s.id === savedActive) ? savedActive : sections[0].id;
+                    }
+                } catch (e) {
+                    console.warn('Error cargando secciones guardadas:', e);
+                }
             }
 
-            if (savedImages) {
-                const imagesData = JSON.parse(savedImages);
-                loadedImages = [];
-                for (let item of imagesData) {
-                    const img = await loadImageFromSrc(item.src);
-                    loadedImages.push({ name: item.name, img: img });
+            // Migration from single-instance localStorage format if present
+            if (sections.length === 0) {
+                const sec = createSection('Sección 1');
+                try {
+                    const savedControls = localStorage.getItem('watermark_controls');
+                    const savedImages = localStorage.getItem('watermark_images');
+                    if (savedControls) {
+                        const data = JSON.parse(savedControls);
+                        sec.controls = { ...getDefaultControls(), ...data };
+                        sec.selectedIndex = data.selectedIndex ?? -1;
+                    }
+                    if (savedImages) {
+                        const imagesData = JSON.parse(savedImages);
+                        for (const item of imagesData) {
+                            const img = await loadImageFromSrc(item.src);
+                            sec.images.push({ name: item.name, img: img });
+                        }
+                        if (sec.selectedIndex >= sec.images.length) {
+                            sec.selectedIndex = sec.images.length - 1;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Error migrando datos previos:', e);
                 }
-                
-                if (selectedIndex >= loadedImages.length) {
-                    selectedIndex = loadedImages.length - 1;
-                }
-                
-                renderGallery();
-                renderCurrentPreview();
+                sections = [sec];
+                activeSectionId = sec.id;
             }
+
+            const activeSec = getActiveSection();
+            applyControlsToDOM(activeSec.controls);
+            renderSectionsBar();
+            renderGallery();
+            renderCurrentPreview();
         }
 
         function loadImageFromSrc(src) {
@@ -347,6 +494,129 @@
                 img.onload = () => resolve(img);
                 img.src = src;
             });
+        }
+
+        function renderSectionsBar() {
+            sectionsBar.innerHTML = '';
+
+            sections.forEach(sec => {
+                const tab = document.createElement('div');
+                tab.className = 'section-tab' + (sec.id === activeSectionId ? ' active' : '');
+
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = sec.name;
+                titleSpan.ondblclick = (e) => {
+                    e.stopPropagation();
+                    renameSection(sec.id);
+                };
+
+                const countSpan = document.createElement('span');
+                countSpan.className = 'section-tab-count';
+                countSpan.textContent = `(${sec.images.length})`;
+
+                const renameBtn = document.createElement('button');
+                renameBtn.type = 'button';
+                renameBtn.className = 'section-tab-btn';
+                renameBtn.title = 'Renombrar sección';
+                renameBtn.textContent = '✎';
+                renameBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    renameSection(sec.id);
+                });
+
+                tab.appendChild(titleSpan);
+                tab.appendChild(countSpan);
+                tab.appendChild(renameBtn);
+
+                if (sections.length > 1) {
+                    const delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.className = 'section-tab-btn';
+                    delBtn.title = 'Eliminar sección';
+                    delBtn.innerHTML = '&times;';
+                    delBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteSection(sec.id);
+                    });
+                    tab.appendChild(delBtn);
+                }
+
+                tab.addEventListener('click', () => switchSection(sec.id));
+                sectionsBar.appendChild(tab);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'add-section-btn';
+            addBtn.textContent = '+ Nueva Sección';
+            addBtn.addEventListener('click', addSection);
+            sectionsBar.appendChild(addBtn);
+
+            if (sections.length > 1) {
+                downloadAllSectionsBtn.classList.remove('hidden');
+            } else {
+                downloadAllSectionsBtn.classList.add('hidden');
+            }
+            const anySectionHasImages = sections.some(s => s.images.length > 0);
+            downloadAllSectionsBtn.disabled = !anySectionHasImages;
+        }
+
+        function switchSection(id) {
+            if (id === activeSectionId) return;
+            const current = getActiveSection();
+            if (current) current.controls = getControlsFromDOM();
+
+            activeSectionId = id;
+            const next = getActiveSection();
+            applyControlsToDOM(next.controls);
+            renderSectionsBar();
+            renderGallery();
+            renderCurrentPreview();
+            saveState();
+        }
+
+        function addSection() {
+            const current = getActiveSection();
+            if (current) current.controls = getControlsFromDOM();
+
+            const nextName = `Sección ${sections.length + 1}`;
+            const newSec = createSection(nextName, current ? current.controls : null);
+            sections.push(newSec);
+            activeSectionId = newSec.id;
+
+            applyControlsToDOM(newSec.controls);
+            renderSectionsBar();
+            renderGallery();
+            renderCurrentPreview();
+            saveState();
+        }
+
+        function renameSection(id) {
+            const sec = sections.find(s => s.id === id);
+            if (!sec) return;
+            const newName = prompt('Nombre de la sección:', sec.name);
+            if (newName !== null && newName.trim() !== '') {
+                sec.name = newName.trim();
+                renderSectionsBar();
+                saveState();
+            }
+        }
+
+        function deleteSection(id) {
+            if (sections.length <= 1) return;
+            const idx = sections.findIndex(s => s.id === id);
+            if (idx === -1) return;
+            sections.splice(idx, 1);
+
+            if (activeSectionId === id) {
+                const nextIdx = Math.min(idx, sections.length - 1);
+                activeSectionId = sections[nextIdx].id;
+                applyControlsToDOM(sections[nextIdx].controls);
+            }
+            renderSectionsBar();
+            renderGallery();
+            renderCurrentPreview();
+            saveState();
         }
 
         window.setRotation = function(angle) {
@@ -369,8 +639,16 @@
             imgInput.value = '';
         });
 
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files).filter(f => f && f.type && f.type.startsWith('image/'));
+            if (files.length > 0) await processFiles(files);
+        });
+
         window.addEventListener('paste', async (e) => {
-            const items = e.clipboardData.items;
+            const items = e.clipboardData?.items;
+            if (!items) return;
             const files = [];
 
             for (let item of items) {
@@ -390,68 +668,77 @@
         });
 
         async function processFiles(files) {
+            const sec = getActiveSection();
             for (let file of files) {
                 const img = await loadImage(file);
-                loadedImages.push({ name: file.name, img: img });
+                sec.images.push({ name: file.name, img: img });
             }
 
-            selectedIndex = loadedImages.length - 1;
+            sec.selectedIndex = sec.images.length - 1;
+            renderSectionsBar();
             renderGallery();
             renderCurrentPreview();
             saveState();
         }
 
         function removeImage(index) {
-            if (index < 0 || index >= loadedImages.length) return;
-            loadedImages.splice(index, 1);
+            const sec = getActiveSection();
+            if (index < 0 || index >= sec.images.length) return;
+            sec.images.splice(index, 1);
 
-            if (loadedImages.length === 0) {
-                selectedIndex = -1;
+            if (sec.images.length === 0) {
+                sec.selectedIndex = -1;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 canvas.width = 0;
                 canvas.height = 0;
-            } else if (selectedIndex >= loadedImages.length) {
-                selectedIndex = loadedImages.length - 1;
+            } else if (sec.selectedIndex >= sec.images.length) {
+                sec.selectedIndex = sec.images.length - 1;
             }
 
+            renderSectionsBar();
             renderGallery();
             renderCurrentPreview();
             saveState();
         }
 
         deleteCurrentBtn.addEventListener('click', () => {
-            if (selectedIndex !== -1) {
-                removeImage(selectedIndex);
+            const sec = getActiveSection();
+            if (sec && sec.selectedIndex !== -1) {
+                removeImage(sec.selectedIndex);
             }
         });
 
         clearAllBtn.addEventListener('click', () => {
-            loadedImages = [];
-            selectedIndex = -1;
+            const sec = getActiveSection();
+            if (!sec) return;
+            sec.images = [];
+            sec.selectedIndex = -1;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             canvas.width = 0;
             canvas.height = 0;
-            localStorage.removeItem('watermark_controls');
-            localStorage.removeItem('watermark_images');
+            renderSectionsBar();
             renderGallery();
             renderCurrentPreview();
+            saveState();
         });
 
         function renderGallery() {
             gallery.innerHTML = '';
+            const sec = getActiveSection();
+            if (!sec) return;
             
-            loadedImages.forEach((item, index) => {
+            sec.images.forEach((item, index) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'thumb-wrapper';
 
                 const thumb = document.createElement('img');
                 thumb.src = item.img.src;
-                if (index === selectedIndex) {
+                if (index === sec.selectedIndex) {
                     thumb.classList.add('active');
                 }
 
                 thumb.addEventListener('click', () => {
-                    selectedIndex = index;
+                    sec.selectedIndex = index;
                     updateActiveThumbnail();
                     renderCurrentPreview();
                     saveState();
@@ -471,17 +758,18 @@
                 gallery.appendChild(wrapper);
             });
 
-            const hasImages = loadedImages.length > 0;
+            const hasImages = sec.images.length > 0;
             downloadZipBtn.disabled = !hasImages;
             copyBtn.disabled = !hasImages;
             deleteCurrentBtn.disabled = !hasImages;
         }
 
         function updateActiveThumbnail() {
+            const sec = getActiveSection();
             const wrappers = gallery.querySelectorAll('.thumb-wrapper');
             wrappers.forEach((wrapper, idx) => {
                 const img = wrapper.querySelector('img');
-                if (idx === selectedIndex) {
+                if (sec && idx === sec.selectedIndex) {
                     img.classList.add('active');
                     wrapper.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 } else {
@@ -510,7 +798,7 @@
             }
         }
 
-        function applyWatermarkToCanvas(imgItem) {
+        function applyWatermarkToCanvas(imgItem, controlsOverride = null) {
             const img = imgItem.img;
             const width = img.width;
             const height = img.height;
@@ -521,24 +809,25 @@
             ctx.clearRect(0, 0, width, height);
             ctx.drawImage(img, 0, 0, width, height);
 
-            const text = textInput.value;
+            const c = controlsOverride || getControlsFromDOM();
+            const text = c.text;
             if (!text) return;
 
-            const fontSize = parseInt(fontSizeInput.value, 10);
-            const fontFamily = fontFamilySelect.value;
-            const opacity = parseFloat(opacityInput.value);
-            const rotation = (parseInt(rotationInput.value, 10) * Math.PI) / 180;
-            const position = positionSelect.value;
+            const fontSize = parseInt(c.fontSize, 10);
+            const fontFamily = c.fontFamily;
+            const opacity = parseFloat(c.opacity);
+            const rotation = (parseInt(c.rotation, 10) * Math.PI) / 180;
+            const position = c.position;
 
             ctx.save();
             ctx.font = `bold ${fontSize}px ${fontFamily}`;
-            ctx.fillStyle = textColorInput.value;
+            ctx.fillStyle = c.textColor;
             ctx.globalAlpha = opacity;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
             if (position === 'tile') {
-                const spacing = parseInt(tileSpacingInput.value, 10);
+                const spacing = parseInt(c.tileSpacing, 10);
                 const textWidth = ctx.measureText(text).width;
                 const stepX = textWidth + spacing;
                 const stepY = fontSize + spacing;
@@ -596,31 +885,31 @@
 
         function renderCurrentPreview() {
             toggleTileControls();
-            if (loadedImages.length > 0 && selectedIndex !== -1 && loadedImages[selectedIndex]) {
-                applyWatermarkToCanvas(loadedImages[selectedIndex]);
+            const sec = getActiveSection();
+            if (sec && sec.images.length > 0 && sec.selectedIndex !== -1 && sec.images[sec.selectedIndex]) {
+                applyWatermarkToCanvas(sec.images[sec.selectedIndex]);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.width = 0;
+                canvas.height = 0;
             }
         }
 
-        [textInput, fontFamilySelect, fontSizeInput, textColorInput, opacityInput, positionSelect, tileSpacingInput].forEach(element => {
+        [textInput, fontFamilySelect, fontSizeInput, textColorInput, opacityInput, positionSelect, tileSpacingInput, exportFormatSelect].forEach(element => {
             element.addEventListener('input', () => {
                 renderCurrentPreview();
                 saveState();
             });
         });
 
-        
-        const exportFormatSelect = document.getElementById('exportFormat');
-        const copyBtn = document.getElementById('copyBtn');
-
         // Copy button handler
         copyBtn.addEventListener('click', async () => {
-            if (selectedIndex === -1 || !loadedImages[selectedIndex]) return;
+            const sec = getActiveSection();
+            if (!sec || sec.selectedIndex === -1 || !sec.images[sec.selectedIndex]) return;
             try {
                 canvas.toBlob(async (blob) => {
                     if (!blob) return;
-                    // PNG is supported universally by ClipboardItem
                     if (navigator.clipboard && window.ClipboardItem) {
-                        // If selected format is JPEG/WEBP, we convert canvas to PNG for clipboard compatibility if needed, or use blob directly
                         let copyBlob = blob;
                         if (exportFormatSelect.value !== 'image/png') {
                             const tempCanvas = document.createElement('canvas');
@@ -646,7 +935,8 @@
         });
 
         downloadZipBtn.addEventListener('click', async () => {
-            if (loadedImages.length === 0) return;
+            const sec = getActiveSection();
+            if (!sec || sec.images.length === 0) return;
 
             const zip = new JSZip();
             downloadZipBtn.disabled = true;
@@ -657,25 +947,63 @@
             if (mimeType === 'image/jpeg') ext = 'jpg';
             if (mimeType === 'image/webp') ext = 'webp';
 
-            loadedImages.forEach((item, index) => {
+            sec.images.forEach((item, index) => {
                 applyWatermarkToCanvas(item);
                 const dataUrl = canvas.toDataURL(mimeType, 0.92);
                 const base64Data = dataUrl.split(',')[1];
-                
                 const sequenceNum = String(index + 1).padStart(3, '0');
-                const fileName = `${sequenceNum}.${ext}`;
-
-                zip.file(fileName, base64Data, { base64: true });
+                zip.file(`${sequenceNum}.${ext}`, base64Data, { base64: true });
             });
 
             const content = await zip.generateAsync({ type: 'blob' });
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = 'imagenes_con_marca_de_agua.zip';
+            const url = URL.createObjectURL(content);
+            link.href = url;
+            const safeName = sec.name.replace(/[^a-z0-9_\-]/gi, '_').toLowerCase();
+            link.download = sections.length > 1 ? `imagenes_${safeName}.zip` : 'imagenes_con_marca_de_agua.zip';
             link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
 
             downloadZipBtn.disabled = false;
             downloadZipBtn.textContent = 'Descargar Todas (.ZIP)';
+            renderCurrentPreview();
+        });
+
+        downloadAllSectionsBtn.addEventListener('click', async () => {
+            const nonEmpty = sections.filter(s => s.images.length > 0);
+            if (nonEmpty.length === 0) return;
+
+            const zip = new JSZip();
+            downloadAllSectionsBtn.disabled = true;
+            downloadAllSectionsBtn.textContent = 'Generando ZIP...';
+
+            nonEmpty.forEach((sec) => {
+                const folderName = sec.name.replace(/[\\/:*?"<>|]/g, '_').trim() || 'Seccion';
+                const folder = zip.folder(folderName);
+                const mimeType = sec.controls.exportFormat || 'image/png';
+                let ext = 'png';
+                if (mimeType === 'image/jpeg') ext = 'jpg';
+                if (mimeType === 'image/webp') ext = 'webp';
+
+                sec.images.forEach((item, index) => {
+                    applyWatermarkToCanvas(item, sec.controls);
+                    const dataUrl = canvas.toDataURL(mimeType, 0.92);
+                    const base64Data = dataUrl.split(',')[1];
+                    const sequenceNum = String(index + 1).padStart(3, '0');
+                    folder.file(`${sequenceNum}.${ext}`, base64Data, { base64: true });
+                });
+            });
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(content);
+            link.href = url;
+            link.download = 'todas_las_secciones.zip';
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            downloadAllSectionsBtn.disabled = false;
+            downloadAllSectionsBtn.textContent = 'Descargar Todas las Secciones (.ZIP)';
             renderCurrentPreview();
         });
     </script>
